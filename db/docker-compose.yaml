@@ -1,0 +1,16 @@
+
+version: '3.8'
+services:
+    vetgo-database:
+        image: postgres:15.0
+        container_name: vetgo-database
+        ports:
+            - "5434:5432"
+        environment:
+            - POSTGRES_DB=vetgo
+            - POSTGRES_USER=vetgo
+            - POSTGRES_PASSWORD=Thanh71311@
+        networks:
+            - vetgo-network
+networks:
+    vetgo-network:
