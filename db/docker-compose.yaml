@@ -1,4 +1,4 @@
-
+# using for dev
 version: '3.8'
 services:
     vetgo-database:
@@ -14,3 +14,5 @@ services:
             - vetgo-network
 networks:
     vetgo-network:
+# docker compose up -d
+# docker compose up -d vetgo-database
