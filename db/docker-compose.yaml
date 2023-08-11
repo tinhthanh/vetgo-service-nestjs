@@ -16,3 +16,11 @@ networks:
     vetgo-network:
 # docker compose up -d
 # docker compose up -d vetgo-database
+
+#docker logs vogo-database -> xem log
+#docker exec -it vogo-database bash -> cmd
+
+# psql -U vetgo -w vetgo
+# \dt -> xem table
+# select * from "table";
+# exit 
