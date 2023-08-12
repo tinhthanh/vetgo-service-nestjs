@@ -11,22 +11,34 @@ datasource db {
 }
 
 model User {
-  id Int @id @default( autoincrement())
-  email String
+  id             Int      @id @default(autoincrement())
+  email          String   @unique
   hashedPassword String
-  firstname String
-  lastName String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  firstname      String? // can be null(optional)
+  lastName       String? // can be null
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  // relationship
+  notes          Note[]
+
+  @@map("users") // users id "table's name" in Postgres SQL
 }
 
 model Note {
   id Int @id @default(autoincrement())
 
-  title String
+  title       String
   description String
-  url String
+  url         String
   // Other
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // relationship
+  userId      Int
+  user User @relation(fields: [userId],references: [id])
+  // end relationship with user
+  @@map("notes") 
 }
+
+// npx prisma migrate dev -> dev la ten dat cho de nho
