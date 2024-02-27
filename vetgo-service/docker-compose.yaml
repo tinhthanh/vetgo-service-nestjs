@@ -1,6 +1,23 @@
 # using for dev
 version: '3.8'
 services:
+    vetgo-redis:
+        image: redis:alpine
+        container_name: vetgo-redis
+        expose:
+            - 6379
+        ports:
+            - 6379:6379 # public port để test mutiple worker     
+        restart: unless-stopped 
+    vetgo-redis-commander: 
+        container_name: vetgo-redis-commander
+        image: rediscommander/redis-commander:latest
+        environment:
+          - REDIS_HOSTS=local:vetgo-redis:6379
+        ports:
+          - '8088:8081'
+        depends_on:
+          - vetgo-redis   
     vetgo-database:
         image: postgres:15.0
         container_name: vetgo-database

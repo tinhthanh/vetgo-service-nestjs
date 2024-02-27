@@ -1,14 +1,18 @@
 import { Injectable } from '@nestjs/common';
-import * as puppeteer from 'puppeteer';
+import * as puppeteer2 from 'puppeteer';
+// import * as puppeteer from 'puppeteer-extra';
+const puppeteer = require('puppeteer-extra')
+// import * as StealthPlugin from 'puppeteer-extra-plugin-stealth';
+const StealthPlugin = require('puppeteer-extra-plugin-stealth')
+puppeteer.use(StealthPlugin())
 const path = require('path');
 
 @Injectable()
 export class PuppeteerService {
-
   async closeAllBrowsers() {
     await Promise.all([...this.profiles.values()].map( it => it.close()));
   }
-  private profiles: Map<string,puppeteer.Browser> = new Map();
+  private profiles: Map<string,puppeteer2.Browser> = new Map();
   
  public async openOnlyUrl(profileId: string ,url: string): Promise<void> {
     const browser = await this.getChromeDriver(profileId);
@@ -52,7 +56,7 @@ public async sendKey(profileId: string , url: string , selector: string, text: s
        }
      }
   }
- public async pressKey(profileId: string , url: string , selector: string, key: puppeteer.KeyInput) {
+ public async pressKey(profileId: string , url: string , selector: string, key: puppeteer2.KeyInput) {
     const browser = await this.getChromeDriver(profileId);
     const pages = await browser.pages();
     for( const page of pages ) {
@@ -70,13 +74,13 @@ public async sendKey(profileId: string , url: string , selector: string, text: s
     
   }
   // set screem 
- private async screemDefault(page: puppeteer.Page): Promise<void> {
+ private async screemDefault(page: puppeteer2.Page): Promise<void> {
     const width = 1280;
     const height = 720;
     await page.setViewport({ width, height });
   }
   // open profile mới
-  private async  getChromeDriver(userProfileId: string): Promise<puppeteer.Browser>  {
+  private async  getChromeDriver(userProfileId: string): Promise<puppeteer2.Browser>  {
     if (this.profiles.has(userProfileId)) {
       console.log('Tra ve profile cu' + userProfileId);
       return this.profiles.get(userProfileId);
@@ -112,7 +116,7 @@ public async sendKey(profileId: string , url: string , selector: string, text: s
     return this.profiles.get(userProfileId);
   }
   // mở một tab url 
- private async openUrl(browser: puppeteer.Browser, url: string): Promise<void> {
+ private async openUrl(browser: puppeteer2.Browser, url: string): Promise<void> {
     const page1 = await browser.newPage();
     await this.screemDefault(page1);
     await page1.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36');
@@ -139,7 +143,7 @@ public async sendKey(profileId: string , url: string , selector: string, text: s
    await page1.goto(url);
   }
   // lấy hết url đang mở 
-private async currentTabs(browser: puppeteer.Browser): Promise<string[]> {
+private async currentTabs(browser: puppeteer2.Browser): Promise<string[]> {
     const pages  = await browser.pages();
     const openUrls = [];
     for (const page of pages) {

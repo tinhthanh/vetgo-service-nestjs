@@ -1,7 +1,7 @@
 import { Body, Controller, Get, OnModuleDestroy, Post } from "@nestjs/common";
 import { ReqKeyPress, ReqOpenOnlyUrl, ReqSendKey } from "../dto/action.dtb";
 import { PuppeteerService } from "../service/puppeteer.service";
-// https://nowsecure.nl
+// https://nowsecure.nl -> link test có phải là boss hay không
 
 @Controller('puppeteer')
 export class PuppeteerController  implements OnModuleDestroy  {
