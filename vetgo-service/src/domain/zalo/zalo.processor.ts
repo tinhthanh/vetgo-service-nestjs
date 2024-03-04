@@ -1,8 +1,9 @@
 import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
+import { QueueName } from './enum';
 // Local event listeners
-@Processor('image:optimize', {
+@Processor(QueueName.zalo, {
   // concurrency: 2, // so luong process chay dong thoi,
   // limiter: { // 2 job trong 60s
   // 	max: 2,
@@ -10,21 +11,20 @@ import { Job } from 'bullmq';
   // },
   lockDuration: 3000,
 })
-export class VetGoJobProcessor extends WorkerHost {
+export class ZaloProcessor extends WorkerHost {
   private logger = new Logger();
   async process(job: Job<any, any, string>, token?: string): Promise<any> {
     console.log('Job type: ' + job.name);
-
     switch (job.name) {
-      case 'sample':
-        const optimzied = await this.optimizeImage({});
-        return optimzied;
+      case 'login':
+        const result = await this.execute({});
+        return result;
       default:
         throw new Error('No job name match');
     }
   }
-  async optimizeImage(img: any) {
-    this.logger.log('Processing image ....');
+  async execute(img: any) {
+    this.logger.log('Processing execute ....');
     // thoi gian làm qua lâu
     // for (let index = 0; index < 10e5; index++) {
     //   const progress = ((index * 100) / 10e5).toFixed(2);

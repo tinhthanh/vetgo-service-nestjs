@@ -6,6 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PuppeteerModule } from './puppeteer/puppeteer.module';
 import { BullModule } from '@nestjs/bullmq';
 import { VetGoJobModule } from './job/vetgo.job.module';
+import { ZaloModule } from './domain/zalo/zalo.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { VetGoJobModule } from './job/vetgo.job.module';
     PrismaModule,
     PuppeteerModule,
     VetGoJobModule,
+    ZaloModule
   ],
   controllers: [],
   providers: [],

@@ -13,4 +13,7 @@ export class VetGoJobService {
     const vetoJob = await this.imageOptimizeQueue.add('sample', { foo: 'bar' });
     return vetoJob;
   }
+  async getVetGoJob() {
+   return this.imageOptimizeQueue.getJobs(['active', 'completed', 'failed']);
+  }
 }
