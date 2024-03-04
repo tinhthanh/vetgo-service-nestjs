@@ -29,6 +29,21 @@ services:
             - POSTGRES_PASSWORD=Thanh71311@
         networks:
             - vetgo-network
+    pgadmin:
+        links:
+            - vetgo-database:vetgo-database
+        container_name: pgadmin
+        image: dpage/pgadmin4
+        ports:
+            - "8082:80"
+        volumes:
+            - /pgadmin:/root/.pgadmin
+        environment:
+            PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+            PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+            PGADMIN_CONFIG_SERVER_MODE: 'False'
+        networks:
+            - vetgo-network
 networks:
     vetgo-network:
 # docker compose up -d
