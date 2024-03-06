@@ -5,8 +5,10 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PuppeteerModule } from './puppeteer/puppeteer.module';
 import { BullModule } from '@nestjs/bullmq';
-import { VetGoJobModule } from './job/vetgo.job.module';
 import { ZaloModule } from './domain/zalo/zalo.module';
+import { OrderModule } from './order/order.module';
+const JOB_REGISTRY = [ZaloModule];
+const CRUD = [OrderModule];
 
 @Module({
   imports: [
@@ -26,8 +28,8 @@ import { ZaloModule } from './domain/zalo/zalo.module';
     AuthModule,
     PrismaModule,
     PuppeteerModule,
-    VetGoJobModule,
-    ZaloModule
+    ...JOB_REGISTRY,
+    ...CRUD,
   ],
   controllers: [],
   providers: [],

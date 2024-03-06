@@ -19,26 +19,52 @@ model User {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   // relationship
-  notes          Note[]
+  // notes          Note[]
 
   @@map("users") // users id "table's name" in Postgres SQL
 }
 
-model Note {
-  id Int @id @default(autoincrement())
-
-  title       String
-  description String
-  url         String
-  // Other
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // relationship
-  userId      Int
-  user User @relation(fields: [userId],references: [id])
-  // end relationship with user
-  @@map("notes") 
+// invoice
+enum OrderStatus {
+  WAITING_PAYMENT
+  PARTIAL_PAYMENT
+  COMPLETED
+  CANCELLED
 }
 
+enum PaymentType {
+  CASH
+  CARD
+  TRANSFER
+}
+model OrderModel {
+  id                String             @id
+  code              String?            @unique // duoc cap nhat tren server
+  branchId          String            
+  customerId        String?             // Assuming this is an integer
+  discount          Float?
+  isRatio           Boolean?
+  discountRatio     Float?
+  totalPayment      Float? // tong tien khach da thanh toan
+  userPayment       Float?  // tiên khách đưa chưa trừ tiên thối lại
+  includedInDebt    Boolean?  // có cộng vào công nợ không
+  method            PaymentType // phương thức thanh
+  bankCode          String?  // ma ngan hang nhận tiền
+  bankNumber        String? // tai khoan nhan tien
+  soldById          String // ma nhan vien ban hang
+  soldByName        String // tên nhan viên
+  orderId           String?
+  description       String?
+  total             Float?
+  createdDate       String?
+  status            OrderStatus?
+  customer          Json? @db.JsonB
+  invoiceDetails    Json[]
+  retailer          String // ma tung cua hang vd petland
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+   @@index([retailer,branchId,customerId, method,soldById,createdDate,status])
+}
 // npx prisma migrate dev -> dev la ten dat cho de nho

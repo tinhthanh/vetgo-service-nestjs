@@ -1,3 +1,5 @@
 
 vetgo-service/browser-profile/**
 vetgo-service/browser-plugin/**
+/db/mongo/data/
+/hasura/
