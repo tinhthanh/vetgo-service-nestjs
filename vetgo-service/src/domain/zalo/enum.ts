@@ -1,3 +1,3 @@
 export enum QueueName {
-  zalo ='zalo:tasks'
+  zalo = 'zalo:tasks',
 }

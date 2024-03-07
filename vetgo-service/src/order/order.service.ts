@@ -6,14 +6,14 @@ import { Prisma } from '@prisma/client';
 export class OrderService {
   constructor(private prisma: PrismaService) {}
   async createMany(data: CreateOrderDto[]): Promise<Prisma.BatchPayload> {
-   return this.prisma.orderModel.createMany({
-       data: data.map((order) => adapter(order)),
+    return this.prisma.orderModel.createMany({
+      data: data.map((order) => adapter(order)),
       skipDuplicates: true, // Set to `true` to skip the creation of records that would result in unique constraint violation.
     });
   }
   async create(order: CreateOrderDto) {
     return this.prisma.orderModel.create({
-      data: adapter(order)
+      data: adapter(order),
     });
   }
 }
@@ -41,6 +41,6 @@ export const adapter = (order: CreateOrderDto) => {
     status: order.status,
     customer: order.customer as any,
     invoiceDetails: order.invoiceDetails as any,
-    retailer: order.retailer
-  }
-}
+    retailer: order.retailer,
+  };
+};

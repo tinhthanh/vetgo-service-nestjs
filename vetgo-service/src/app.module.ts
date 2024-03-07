@@ -7,13 +7,36 @@ import { PuppeteerModule } from './puppeteer/puppeteer.module';
 import { BullModule } from '@nestjs/bullmq';
 import { ZaloModule } from './domain/zalo/zalo.module';
 import { OrderModule } from './order/order.module';
+import { database_config } from './configs/configuration.config';
 const JOB_REGISTRY = [ZaloModule];
 const CRUD = [OrderModule];
-
+import * as Joi from 'joi';
+import { MongooseModule } from '@nestjs/mongoose';
 @Module({
   imports: [
     ConfigModule.forRoot({
+      validationSchema: Joi.object({
+        NODE_ENV: Joi.string()
+          .valid('development', 'production', 'test', 'provision', 'staging')
+          .default('development'),
+        PORT: Joi.number().default(3000),
+      }),
       isGlobal: true,
+      envFilePath: process.env.NODE_ENV === 'development' ? '.env.dev' : '.env',
+      load: [database_config],
+      cache: true, // <== Ở đây
+      expandVariables: true, // <== Ở đây
+      validationOptions: {
+        abortEarly: false,
+      },
+    }),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGO_DATABASE_URL'),
+        dbName: configService.get<string>('MONGO_DATABASE_NAME'),
+      }),
+      inject: [ConfigService],
     }),
     BullModule.forRootAsync({
       inject: [ConfigService],
