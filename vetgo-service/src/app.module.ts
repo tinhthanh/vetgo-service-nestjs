@@ -8,10 +8,14 @@ import { BullModule } from '@nestjs/bullmq';
 import { ZaloModule } from './domain/zalo/zalo.module';
 import { OrderModule } from './order/order.module';
 import { database_config } from './configs/configuration.config';
+// đăng ký job chạy
 const JOB_REGISTRY = [ZaloModule];
+// đăng ký CRUD
 const CRUD = [OrderModule];
+
 import * as Joi from 'joi';
 import { MongooseModule } from '@nestjs/mongoose';
+import { SyncFirebaseModule } from './modules/sync-firebase/sync-firebase.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -25,7 +29,7 @@ import { MongooseModule } from '@nestjs/mongoose';
       envFilePath: process.env.NODE_ENV === 'development' ? '.env.dev' : '.env',
       load: [database_config],
       cache: true, // <== Ở đây
-      expandVariables: true, // <== Ở đây
+      expandVariables: true, // <== Ở đây ${} // nối các biết lại
       validationOptions: {
         abortEarly: false,
       },
@@ -53,6 +57,7 @@ import { MongooseModule } from '@nestjs/mongoose';
     PuppeteerModule,
     ...JOB_REGISTRY,
     ...CRUD,
+    SyncFirebaseModule
   ],
   controllers: [],
   providers: [],

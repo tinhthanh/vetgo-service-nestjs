@@ -1,6 +1,19 @@
 # using for dev
 version: '3.8'
 services:
+    vetgo_mongodb:
+        container_name: vetgo_mongodb
+        image: mongo:latest
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: vetgo
+            MONGO_INITDB_ROOT_PASSWORD: Vetgo@123
+        # expose:
+        #   - ${DATABASE_PORT}
+        ports:
+            - "27017:27017"
+        volumes:
+            - ./mongo-data:/data/db
+        restart: unless-stopped
     vetgo-redis:
         image: redis:alpine
         container_name: vetgo-redis
