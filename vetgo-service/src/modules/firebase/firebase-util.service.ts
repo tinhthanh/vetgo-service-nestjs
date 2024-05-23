@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { map, switchMap } from 'rxjs/operators';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { Observable, of } from 'rxjs';
 import { AxiosResponse } from 'axios';
 
@@ -27,7 +27,12 @@ export class FirebaseUtilService {
       password: password,
       returnSecureToken: true,
     };
-      return this.httpService.post(signInUrl, payload);
+      return this.httpService.post(signInUrl, payload).pipe(
+        catchError((err) => {
+          Logger.log(err);
+          return of(err.response.data);
+        })
+      );
   }
 
  public getToken(apiKey: string): Observable<string> {
@@ -38,11 +43,18 @@ export class FirebaseUtilService {
     try {
     return this.loginUser(defaultUser.userName, defaultUser.pwd, apiKey).pipe(
              switchMap((res) => {
+                Logger.log(res);
                 if(res.data?.idToken) {
+                  Logger.log(res);
                     return of(res.data.idToken);
                 } else {
+                  Logger.log('--2132321312');
                     return this.createUser(defaultUser.userName, defaultUser.pwd, apiKey).pipe(map((res) => res.data.idToken));
                 }
+             }),
+             catchError((err) => {
+              Logger.log(err);
+              return this.createUser(defaultUser.userName, defaultUser.pwd, apiKey).pipe(map((res) => res.data.idToken));
              })
 
         );

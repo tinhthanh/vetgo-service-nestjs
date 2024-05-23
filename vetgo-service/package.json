@@ -6,6 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "pm2:start": "pm2 start dist/main.js --name vetgo-service --watch false",
     "db:dev:remove": "docker compose rm vetgo-database --stop --force --volumes",
     "db:dev:create": "docker compose up vetgo-database --detach",
     "db:dev:restart": "npm run db:dev:remove && npm run db:dev:create ",
@@ -43,6 +44,7 @@
     "bullmq": "^4.8.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
+    "date-fns": "^3.6.0",
     "joi": "^17.12.2",
     "mongoose": "^8.2.1",
     "passport": "^0.6.0",
@@ -51,7 +53,8 @@
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",

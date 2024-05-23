@@ -17,10 +17,37 @@ import { firstValueFrom } from "rxjs";
 
 const gzip = promisify(zlib.gzip);
 const unlink = promisify(fs.unlink);
-
+export const enumRetailer = {
+  woo: 'woo',
+  pkvetgo: 'pkvetgo', // for only demo
+  phathuy: 'phathuy',
+  diamond : 'diamond-vet',
+  moonPet: 'moon-pet',
+  thapcham: 'thapcham-vetgo',
+  petshop : 'petshop-vet',
+  petplus : 'petplus',
+  petland : 'petland',
+  vetgo01 : 'vetgo-01'
+}
 @Injectable()
 export class SyncFirebaseService {
     private readonly logger = new Logger(SyncFirebaseService.name);
+    // private readonly  config = {
+    //   "petplus": {
+    //     sheetId: "AKfycbxksjNgYZWqAeHWERQiXbyGh5Q8wsTfMVpJ49sZKe7dCELlxe7LIq_OFyXk0HSJmQKb",
+    //     firebase: {
+    //       apiKey: "AIzaSyDdKB4XXkT7sAcTTZh1Ep9_baxiabZ7jJs",
+    //       authDomain: "petplus-vet.firebaseapp.com",
+    //       databaseURL: "https://petplus-vet-default-rtdb.asia-southeast1.firebasedatabase.app",
+    //       projectId: "petplus-vet",
+    //       storageBucket: "petplus-vet.appspot.com",
+    //       messagingSenderId: "1033394551475",
+    //       appId: "1:1033394551475:web:5b7493a4d4075f391e0ec6",
+    //       measurementId: "G-96FTV4MEDV"
+    //     },
+    //     retailer: "petplus"
+    //    }
+    // };
     private readonly  config = {
         "vetgo-01": {
           sheetId:
@@ -39,6 +66,40 @@ export class SyncFirebaseService {
           retailer: "vetgo-01",
         },
       };
+
+    // private readonly  config = {
+    //   "woo": { // Phòng Khám Thú Y Woo
+    //     firebase : {
+    //       apiKey: "AIzaSyAkvfVlnsED0THvkB8Rkd1NEWkGpV6Rd-4",
+    //       authDomain: "woo-vet.firebaseapp.com",
+    //       databaseURL: "https://woo-vet-default-rtdb.asia-southeast1.firebasedatabase.app",
+    //       projectId: "woo-vet",
+    //       storageBucket: "woo-vet.appspot.com",
+    //       messagingSenderId: "288726193438",
+    //       appId: "1:288726193438:web:8003ccdf8dad653b98250f",
+    //       measurementId: "G-86VWRZZ5LM"
+    //     },
+    //     sheetId: "AKfycbwoZcro1uBFUL1QqBtBDgWzPW_dC4l3IKCndxW-nA20uFRyGZ_08eDa_oIC998FP69gjA",
+    //     retailer: "woo"
+    //   }
+    // };
+ 
+    // private readonly  config = {
+    //   [enumRetailer.phathuy] : {
+    //     firebase: {
+    //       apiKey: "AIzaSyDd_omzIAPj-o0JjS9mDSgaAUtZWYIxaUk",
+    //       authDomain: "phathuy-vetgo.firebaseapp.com",
+    //       projectId: "phathuy-vetgo",
+    //       storageBucket: "phathuy-vetgo.appspot.com",
+    //       messagingSenderId: "386616370919",
+    //       appId: "1:386616370919:web:3cf4377bb90f373e14a442",
+    //       databaseURL: "https://phathuy-vetgo-default-rtdb.asia-southeast1.firebasedatabase.app",
+    //       measurementId: "G-NPXFEBN0PE"
+    //     },
+    //     sheetId: "AKfycbxKPwjXUowbJqjDJTWrwXC7IAOLHgTzxG3vQ7q9cFKZgU4m_EdGeHbTzMTalToODG9y7Q",
+    //     retailer: enumRetailer.phathuy
+    //   },
+    // };
       constructor(
         private readonly firebase: FirebaseCurlService,
         private readonly firebaseAuth: FirebaseUtilService,
@@ -46,9 +107,12 @@ export class SyncFirebaseService {
         private readonly bot: TelegramService,
       ) {}
     async firebaseSyncJob() {
+      let report  = `` ;
         for (const [key, value] of Object.entries(this.config)) {
             const url = value.firebase.databaseURL;
-          // step 1 get token
+          // step 1 get token]
+          this.logger.debug("key : " + key);
+          this.logger.debug("url : " + url);
          const token = await firstValueFrom(this.firebaseAuth.getToken(value.firebase.apiKey));
           this.logger.log("Token : " + token);
           // lấy ra danh sách các chi nhánh -> lấy đc ID từng chi nhánh
@@ -102,7 +166,7 @@ export class SyncFirebaseService {
                     return it;
                 });
                  this.logger.log(`${key}/${table} case init patch ${countNullSeqNo} null seqNo`);
-                this.bot.pingFirebase(`${key}/${table} case init patch ${countNullSeqNo} null seqNo`);
+                 report+=  `${key}/${table} case init patch ${countNullSeqNo} null seqNo`;
                 // path file
                 const file = await this.saveMap(key, table, dataFirebase);
 
@@ -130,15 +194,15 @@ export class SyncFirebaseService {
               } else {
                 // case cập nhật thêm vào
                  this.logger.log(`${key}/${table} case câp nhật từ firebase to github`);
-                this.bot.pingFirebase(`${key}/${table} case cập nhật từ firebase to github`);
+                 report+=  (`${key}/${table} case cập nhật từ firebase to github`);
                  this.logger.log(`${key}/${table} Github data seqNo ${gitseqNo.seqNo}`);
-                this.bot.pingFirebase(`${key}/${table} Github data seqNo ${gitseqNo.seqNo}`);
+                 report+=  (`${key}/${table} Github data seqNo ${gitseqNo.seqNo}`);
                   // lấy mới từ firebase theo seqNo
                   const dataFirebase = await this.firebase.getBySeqNo(url,table, gitseqNo.seqNo, token);
                   // cập nhật sag vào github
                   if(dataFirebase.length > 0) { // có dữ liệu cần cập nhật 
                      this.logger.log(`${key}/${table} có dữ liệu cần cập nhật ${dataFirebase.length}`);
-                    this.bot.pingFirebase(`${key}/${table} có dữ liệu cần cập nhật ${dataFirebase.length}`);
+                     report+=  (`${key}/${table} có dữ liệu cần cập nhật ${dataFirebase.length}`);
                     // lấy hết data từ github , concat data firebase với data github
                     const tableKeyValue = await this.githubService.getTable(key, table); // { key: value}
                      this.logger.log(`${key}/${table} before change ${Object.keys(tableKeyValue).length}`);
@@ -156,7 +220,7 @@ export class SyncFirebaseService {
                       }
                     }
                      this.logger.log(`${key}/${table} affter change update ${update} create ${create}`);
-                    this.bot.pingFirebase(`${key}/${table} affter change update ${update} create ${create}`);
+                     report+=  (`${key}/${table} affter change update ${update} create ${create}`);
                     // save file to google driver
                     if( (create + update) > 0) {
                         // paath
@@ -172,7 +236,7 @@ export class SyncFirebaseService {
                      await this.githubService.commitContent(fileArrayBlob , `${key}/${table}_array`);
       
                        this.logger.log(`${key}/${table} save driver to github`);
-                      this.bot.pingFirebase(`${key}/${table} save driver to github`);
+                       report+=  (`${key}/${table} save driver to github`);
           
                       const maxSeqNo = Math.max(
                         0,
@@ -187,18 +251,19 @@ export class SyncFirebaseService {
                       this.logger.log(' mapStr -> ', mapStr);
                     await this.githubService.commitJson( JSON.stringify(mapStr) ,`${key}/${table}_map`);
                        this.logger.log(`${key}/${table} cập nhật map trong github`);
-                      this.bot.pingFirebase(`${key}/${table} cập nhật map trong github`);
+                       report+=  (`${key}/${table} cập nhật map trong github`);
                     } else {
                        this.logger.log('Khong co du lieu can cap nhat');
-                      this. bot.pingFirebase('Khong co du lieu can cap nhat');
+                       report+=  ('Khong co du lieu can cap nhat');
                     }
                     
                   } else {
                      this.logger.log('Khong co du lieu can cap nhat');
-                    this. bot.pingFirebase('Khong co du lieu can cap nhat');
+                     report+=  ('Khong co du lieu can cap nhat');
                   }
               }
             }
+            this.bot.pingFirebase(report);
           } catch (e) {
              this.logger.log(e);
             this.bot.pingFirebase(`Error brand ${key} ${e}`);

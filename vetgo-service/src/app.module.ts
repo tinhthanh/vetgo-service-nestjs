@@ -8,10 +8,13 @@ import { BullModule } from '@nestjs/bullmq';
 import { ZaloModule } from './domain/zalo/zalo.module';
 import { OrderModule } from './order/order.module';
 import { database_config } from './configs/configuration.config';
+import { FvetModule } from './modules/fvet/fvet.module';
+
 // đăng ký job chạy
 const JOB_REGISTRY = [ZaloModule];
 // đăng ký CRUD
 const CRUD = [OrderModule];
+const TOOLS = [FvetModule];
 
 import * as Joi from 'joi';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -57,6 +60,7 @@ import { SyncFirebaseModule } from './modules/sync-firebase/sync-firebase.module
     PuppeteerModule,
     ...JOB_REGISTRY,
     ...CRUD,
+    ...TOOLS,
     SyncFirebaseModule
   ],
   controllers: [],

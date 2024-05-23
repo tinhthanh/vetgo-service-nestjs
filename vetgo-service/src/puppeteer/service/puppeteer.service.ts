@@ -118,6 +118,7 @@ export class PuppeteerService {
       headless: false,
       args: customOptions,
       ignoreDefaultArgs: ['--enable-automation'],
+      userDataDir: `browser-cache/${userProfileId}` // change lại mấy cái static page
     };
     const browser = await puppeteer.launch(chromeOption);
     this.profiles.set(userProfileId, browser);
@@ -135,11 +136,24 @@ export class PuppeteerService {
     url: string,
   ): Promise<void> {
     const page1 = await browser.newPage();
+    // interception
+    await page1.setRequestInterception(true); // Câu lệnh này cần gọi 1 lần trước khi gọi page.on('request' ...
+    page1.on('request', request => {
+      // request là hình ảnh media thì bỏ qua luôn
+      if ( (request.resourceType() === 'image') || (request.resourceType() === 'media')  ){
+          request.abort();
+      }else{
+          request.continue();
+      }
+    });
+    // interception
+
+    
     await this.screemDefault(page1);
     await page1.setUserAgent(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36',
     );
-    await page1.evaluateOnNewDocument(() => {
+    await page1.evaluateOnNewDocument(() => { // fake vân tay
       // Ghi đè các thuộc tính canvas để làm cho vân tay khác nhau
       const originalCreateElement = document.createElement;
       document.createElement = function (tagName) {
@@ -176,3 +190,41 @@ export class PuppeteerService {
     return openUrls;
   }
 }
+
+// tôí ưu trog lúc cào data
+const minimal_args = [
+  '--disable-speech-api', // 	Disables the Web Speech API (both speech recognition and synthesis)
+  '--disable-background-networking', // Disable several subsystems which run network requests in the background. This is for use 									  // when doing network performance testing to avoid noise in the measurements. ↪
+  '--disable-background-timer-throttling', // Disable task throttling of timer tasks from background pages. ↪
+  '--disable-backgrounding-occluded-windows',
+  '--disable-breakpad',
+  '--disable-client-side-phishing-detection',
+  '--disable-component-update',
+  '--disable-default-apps',
+  '--disable-dev-shm-usage',
+  '--disable-domain-reliability',
+  '--disable-extensions',
+  '--disable-features=AudioServiceOutOfProcess',
+  '--disable-hang-monitor',
+  '--disable-ipc-flooding-protection',
+  '--disable-notifications',
+  '--disable-offer-store-unmasked-wallet-cards',
+  '--disable-popup-blocking',
+  '--disable-print-preview',
+  '--disable-prompt-on-repost',
+  '--disable-renderer-backgrounding',
+  '--disable-setuid-sandbox',
+  '--disable-sync',
+  '--hide-scrollbars',
+  '--ignore-gpu-blacklist',
+  '--metrics-recording-only',
+  '--mute-audio',
+  '--no-default-browser-check',
+  '--no-first-run',
+  '--no-pings',
+  '--no-sandbox',
+  '--no-zygote',
+  '--password-store=basic',
+  '--use-gl=swiftshader',
+  '--use-mock-keychain',
+];
