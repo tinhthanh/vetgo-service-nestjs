@@ -57,6 +57,7 @@ export class GithubService {
       throw error;
     }
   }
+  // commit 1 file qua github
   private async commitToGithub(content: Buffer | string, path: string): Promise<any> {
     const url = `https://api.github.com/repos/${this.configService.get('GITHUB_OWNER')}/${this.configService.get('GITHUB_REPO')}/contents/${path}`;
     const message = new Date().toISOString();

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { catchError, map, switchMap } from 'rxjs/operators';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { AxiosResponse } from 'axios';
 
 @Injectable()
@@ -17,20 +17,32 @@ export class FirebaseUtilService {
       password: pwd,
       returnSecureToken: true,
     };
-      return this.httpService.post(createUserUrl, payload);
+      return this.httpService.post(createUserUrl, payload).pipe(
+        catchError((error) => {
+          if (error.response && error.response.status === 400) {
+            const errorMessage = error.response.data.error.message;
+            return throwError(() => new Error(`Error 400: ${errorMessage}`));
+          }
+          return throwError(() => error);
+        })
+      );
   }
 
   private loginUser(email: string, password: string, apiKey: string): Observable<AxiosResponse<{localId: string,idToken: string}>> {
     const signInUrl = `https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=${apiKey}`;
+    console.warn(signInUrl) ;
     const payload = {
       email: email,
       password: password,
       returnSecureToken: true,
     };
       return this.httpService.post(signInUrl, payload).pipe(
-        catchError((err) => {
-          Logger.log(err);
-          return of(err.response.data);
+        catchError((error) => {
+          if (error.response && error.response.status === 400) {
+            const errorMessage = error.response.data.error.message;
+            return throwError(() => new Error(`Error 400: ${errorMessage}`));
+          }
+          return throwError(() => error);
         })
       );
   }
@@ -43,12 +55,9 @@ export class FirebaseUtilService {
     try {
     return this.loginUser(defaultUser.userName, defaultUser.pwd, apiKey).pipe(
              switchMap((res) => {
-                Logger.log(res);
                 if(res.data?.idToken) {
-                  Logger.log(res);
                     return of(res.data.idToken);
                 } else {
-                  Logger.log('--2132321312');
                     return this.createUser(defaultUser.userName, defaultUser.pwd, apiKey).pipe(map((res) => res.data.idToken));
                 }
              }),

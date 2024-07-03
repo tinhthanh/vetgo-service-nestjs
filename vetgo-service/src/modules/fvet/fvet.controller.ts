@@ -70,28 +70,31 @@ export class FvetController {
       const listPhieuKham1: PhieuKham[] = JSON.parse(await readFile(path.join('./petplus/input', 'phieukham1.json'), {encoding : 'utf8'}));
       console.log(listPhieuKham1.length);
 
-      const mUser = {};
-      const mListPieuKham  = listPhieuKham.concat(listPhieuKham1).reduce((pre, curr, index) => {
+      const listPhieuKham2: PhieuKham[] = JSON.parse(await readFile(path.join('./petplus/input', 'phieukham2.json'), {encoding : 'utf8'}));
+      console.log(listPhieuKham2.length);
+
+      // const mUser = {};
+      const mListPieuKham  = listPhieuKham.concat(listPhieuKham1).concat(listPhieuKham2).reduce((pre, curr, index) => {
         const pet = mListPet[curr.mathucung.mathucung];
         const cus = mListCus[curr.thongtinkhachhang.sodienthoai];
         if( cus && pet ) {
             mListPet[curr.mathucung.mathucung] = {...mListPet[curr.mathucung.mathucung],customerId: curr.thongtinkhachhang.sodienthoai }
             // pet.customerId = cus.id;
-            const u: Partial<UserModel> = {
-                id: String(curr.bacsi.id),
-                seqNo: new Date().getTime() + index,
-                passport: '9999',
-                displayName: curr.bacsi.ten,
-                date: new Date(),
-                uid: null,
-                address: 'HCM',
-                role: 'ADMIN',
-                active:  true,
-                brandId: 'B1',
-            }
-            if(curr.bacsi.id) {
-                mUser[u.id] = u;
-            }
+            // const u: Partial<UserModel> = {
+            //     id: String(curr.bacsi.id),
+            //     seqNo: new Date().getTime() + index,
+            //     passport: '9999',
+            //     displayName: curr.bacsi.ten,
+            //     date: new Date(),
+            //     uid: null,
+            //     address: 'HCM',
+            //     role: 'ADMIN',
+            //     active:  true,
+            //     brandId: 'B1',
+            // }
+            // if(curr.bacsi.id) {
+            //     mUser[u.id] = u;
+            // }
             const p: Partial<PetHistoryModel> = {
                 id: curr.maphieukham,
                 seqNo: new Date().getTime() + index,
@@ -123,7 +126,7 @@ export class FvetController {
                 {table: 'HISTORY', data:  Object.values(mListPieuKham)},
             ];
         for(const item of list) { 
-            await this.syncGithub('petplus',item.table, item.data);
+            await this.syncGithub('petplus2025',item.table, item.data);
         }
         console.log('done');
       // save file qua github

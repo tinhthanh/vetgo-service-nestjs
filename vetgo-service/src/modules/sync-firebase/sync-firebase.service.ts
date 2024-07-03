@@ -32,8 +32,24 @@ export const enumRetailer = {
 @Injectable()
 export class SyncFirebaseService {
     private readonly logger = new Logger(SyncFirebaseService.name);
+    private readonly  config = {
+        'petplus2025': {
+          firebase: {
+            apiKey: "AIzaSyCEb0Gmc3Ull2ENRp78H6MUWOYFnF1iTVo",
+            authDomain: "petplus2025.firebaseapp.com",
+            databaseURL: "https://petplus2025-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "petplus2025",
+            storageBucket: "petplus2025.appspot.com",
+            messagingSenderId: "329671720857",
+            appId: "1:329671720857:web:6666065878760afbafdd08",
+            measurementId: "G-WPENH7P36Z"
+          },
+          retailer: 'petplus2025',
+          sheetId: "AKfycbwoR88HlfAJ0o0hFapH_NfhbRBlwlk1GSEnk60SAO7LXqHFATwZwDdc95Uu5TL-2FJq"
+        }
+      };
     // private readonly  config = {
-    //   "petplus": {
+    //   [enumRetailer.petplus]: {
     //     sheetId: "AKfycbxksjNgYZWqAeHWERQiXbyGh5Q8wsTfMVpJ49sZKe7dCELlxe7LIq_OFyXk0HSJmQKb",
     //     firebase: {
     //       apiKey: "AIzaSyDdKB4XXkT7sAcTTZh1Ep9_baxiabZ7jJs",
@@ -45,60 +61,8 @@ export class SyncFirebaseService {
     //       appId: "1:1033394551475:web:5b7493a4d4075f391e0ec6",
     //       measurementId: "G-96FTV4MEDV"
     //     },
-    //     retailer: "petplus"
+    //     retailer: enumRetailer.petplus
     //    }
-    // };
-    private readonly  config = {
-        "vetgo-01": {
-          sheetId:
-            "AKfycbwVPtWi1Sfx13sNtpSGqFBi4HBRQ1CyWCEcAtoHSPufR76xL4VJBkkIBpZ3DidWCzzT",
-          firebase: {
-            apiKey: "AIzaSyAOi_TN4at6W__9Jjzz31EEzMxQS5nf1s0",
-            authDomain: "vetgo-01.firebaseapp.com",
-            databaseURL:
-              "https://vetgo-01-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "vetgo-01",
-            storageBucket: "vetgo-01.appspot.com",
-            messagingSenderId: "883303533949",
-            appId: "1:883303533949:web:fcd2839a459ed1ae6e1014",
-            measurementId: "G-TFR9L0R342",
-          },
-          retailer: "vetgo-01",
-        },
-      };
-
-    // private readonly  config = {
-    //   "woo": { // Phòng Khám Thú Y Woo
-    //     firebase : {
-    //       apiKey: "AIzaSyAkvfVlnsED0THvkB8Rkd1NEWkGpV6Rd-4",
-    //       authDomain: "woo-vet.firebaseapp.com",
-    //       databaseURL: "https://woo-vet-default-rtdb.asia-southeast1.firebasedatabase.app",
-    //       projectId: "woo-vet",
-    //       storageBucket: "woo-vet.appspot.com",
-    //       messagingSenderId: "288726193438",
-    //       appId: "1:288726193438:web:8003ccdf8dad653b98250f",
-    //       measurementId: "G-86VWRZZ5LM"
-    //     },
-    //     sheetId: "AKfycbwoZcro1uBFUL1QqBtBDgWzPW_dC4l3IKCndxW-nA20uFRyGZ_08eDa_oIC998FP69gjA",
-    //     retailer: "woo"
-    //   }
-    // };
- 
-    // private readonly  config = {
-    //   [enumRetailer.phathuy] : {
-    //     firebase: {
-    //       apiKey: "AIzaSyDd_omzIAPj-o0JjS9mDSgaAUtZWYIxaUk",
-    //       authDomain: "phathuy-vetgo.firebaseapp.com",
-    //       projectId: "phathuy-vetgo",
-    //       storageBucket: "phathuy-vetgo.appspot.com",
-    //       messagingSenderId: "386616370919",
-    //       appId: "1:386616370919:web:3cf4377bb90f373e14a442",
-    //       databaseURL: "https://phathuy-vetgo-default-rtdb.asia-southeast1.firebasedatabase.app",
-    //       measurementId: "G-NPXFEBN0PE"
-    //     },
-    //     sheetId: "AKfycbxKPwjXUowbJqjDJTWrwXC7IAOLHgTzxG3vQ7q9cFKZgU4m_EdGeHbTzMTalToODG9y7Q",
-    //     retailer: enumRetailer.phathuy
-    //   },
     // };
       constructor(
         private readonly firebase: FirebaseCurlService,
@@ -133,7 +97,18 @@ export class SyncFirebaseService {
               'PurchaseOrder',
               'SETTING',
               'USERS',
-              'suppliers'
+              'suppliers',
+              'CASHFLOW',
+              'DEPOSIT',
+              'MEDICAL_RECORD',
+              'ORDER_RETURN',
+              // CHAM CONG
+              'SHIFT_DIVISION',
+              'WORKING_SCHEDULE',
+              'TIMEKEEPING',
+              'SHIFT',
+              'TIMEKEEPING_REQUEST',
+              'SETTING_TIMEKEEPING'
             ];
             // addd thêm các table order
              const brands = await this.firebase.getBySeqNo(url,'BRAND', 0, token);
@@ -268,6 +243,7 @@ export class SyncFirebaseService {
              this.logger.log(e);
             this.bot.pingFirebase(`Error brand ${key} ${e}`);
           }
+          this.logger.log("done");
         }
         return ;
       }    
