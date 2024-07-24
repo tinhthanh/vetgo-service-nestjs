@@ -93,9 +93,13 @@ export class FirebaseCurlService {
     }
   }
 
-  async deleteById(firebaseUrl: string,table: string, id: string): Promise<{ status: string }> {
-    const path = `/${table}/${id}.json`;
+  async deleteById(firebaseUrl: string,table: string, id: string,accessToken?: string): Promise<{ status: string }> {
+    let path = `/${table}/${id}.json`;
+    if (accessToken) {
+      path += `?auth=${accessToken}`;
+    }
     try {
+      console.log(firebaseUrl + path)
       await lastValueFrom(this.httpService.delete(firebaseUrl + path, {
         headers: {
           'Content-Type': 'application/json'
@@ -107,7 +111,27 @@ export class FirebaseCurlService {
       throw error;
     }
   }
-
+  async deleteByIds(firebaseUrl: string, table: string, ids: string[],accessToken?: string): Promise<{ status: string }> {
+    let path = firebaseUrl + '/.json';
+      if (accessToken) {
+        path += `?auth=${accessToken}`;
+      }
+      const updates = ids.reduce((acc, id) => {
+        acc[`${table}/${id}`] = null;
+        return acc;
+      }, {});
+      try {
+        await lastValueFrom(this.httpService.patch(path, updates, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }));
+        return { status: 'success' };
+      } catch (error) {
+        this.logger.error('Failed to delete data by ids', error);
+        throw error;
+      }
+  }
   async updateById<T>(firebaseUrl: string,table: string, id: string, newData: T, accessToken?: string): Promise<{ status: string, data: T }> {
     if (!id) {
       return { status: 'error', data: null };

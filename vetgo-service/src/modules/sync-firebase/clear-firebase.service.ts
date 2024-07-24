@@ -30,8 +30,8 @@ export const enumRetailer = {
   vetgo01 : 'vetgo-01'
 }
 @Injectable()
-export class SyncFirebaseService {
-    private readonly logger = new Logger(SyncFirebaseService.name);
+export class ClearFirebaseService {
+    private readonly logger = new Logger(ClearFirebaseService.name);
     private readonly  config = {
         'petplus2025': {
           firebase: {
@@ -70,8 +70,7 @@ export class SyncFirebaseService {
         private readonly githubService: GithubService,
         private readonly bot: TelegramService,
       ) {}
-    async firebaseSyncJob() {
-      let report  = `` ;
+    async removeData() {
         for (const [key, value] of Object.entries(this.config)) {
             const url = value.firebase.databaseURL;
           // step 1 get token]
@@ -87,16 +86,16 @@ export class SyncFirebaseService {
               'BILLING',
               'BOOKING',
               'CAGE',
-              'BRAND',
+              // 'BRAND',
               'CUSTOMER',
               'HISTORY',
               // 'ORDERS_CODE',
-              'PERMISSION_GROUP',
+              // 'PERMISSION_GROUP',
               'PET',
               'PRODUCT',
               'PurchaseOrder',
-              'SETTING',
-              'USERS',
+              // 'SETTING',
+              // 'USERS',
               'suppliers',
               'CASHFLOW',
               'DEPOSIT',
@@ -123,123 +122,60 @@ export class SyncFirebaseService {
               }
                this.logger.log(tables);
             for(const table of tables) {
-               // TODO kiểm tra thời gian đã thự thi quá 4 phút thì tạo một trigger call lại hàm firebaseSyncJob
-      
-               // TODO mỗi brand chị được chạy chạy một lần trong ngày 
-      
-            //   const store = new StoreController();
-              // B1 lấy seqNo từ github hub
-              const gitseqNo = await this.githubService.getSeqNo( key ,table );
-              this.logger.log(gitseqNo);
-              if(gitseqNo === null) { // case init -> tạo mới lấy data từ fireabse insert vào github
-                let countNullSeqNo = 0;
-                let dataFirebase = await this.firebase.getBySeqNo( url,table, 0, token);
-                 dataFirebase = dataFirebase.map((it, index) => { // thêm seqNo
-                    if(!it.seqNo) {
-                      countNullSeqNo++;
-                      return {...it ,seqNo: new Date().getTime() + index } ;
-                    }
-                    return it;
-                });
-                 this.logger.log(`${key}/${table} case init patch ${countNullSeqNo} null seqNo`);
-                 report+=  `${key}/${table} case init patch ${countNullSeqNo} null seqNo`;
-                // path file
-                const file = await this.saveMap(key, table, dataFirebase);
-
-                // save  driver to github
-                const blob = await this.getFileBytes(file);
-              await this.githubService.commitContent(blob, `${key}/${table}`);
-                // save array driver to github
-                this.logger.log(`---- ${table}_array 1`);
-                const fileArray = await this.saveAny(key, `${table}_array`, this.convertObjectsToArray(Object.values(dataFirebase)));
-                const blobArray = await this.getFileBytes(fileArray);
-              await this.githubService.commitContent(blobArray , `${key}/${table}_array`);
-                this.logger.log(`---- ${table}_array 2`);
-                // init map -> maxSeqNo , total dataa
-                const maxSeqNo = Math.max(
-                  0,
-                  ...dataFirebase.map((it) => Number(it.seqNo || 0))
-                );
-                const mapStr = {
-                  seqNo: maxSeqNo,
-                  total: dataFirebase.length,
-                  lastUpdated: new Date().toISOString()
-                }
-                await this.githubService.commitJson( JSON.stringify(mapStr) ,`${key}/${table}_map`);
-                // update all data firebase to github
-              } else {
-                // case cập nhật thêm vào
-                 this.logger.log(`${key}/${table} case câp nhật từ firebase to github`);
-                 report+=  (`${key}/${table} case cập nhật từ firebase to github`);
-                 this.logger.log(`${key}/${table} Github data seqNo ${gitseqNo.seqNo}`);
-                 report+=  (`${key}/${table} Github data seqNo ${gitseqNo.seqNo}`);
                   // lấy mới từ firebase theo seqNo
-                  const dataFirebase = await this.firebase.getBySeqNo(url,table, gitseqNo.seqNo, token);
+                  const dataFirebase = await this.firebase.getBySeqNo(url,table,0, token);
                   // cập nhật sag vào github
+
                   if(dataFirebase.length > 0) { // có dữ liệu cần cập nhật 
-                     this.logger.log(`${key}/${table} có dữ liệu cần cập nhật ${dataFirebase.length}`);
-                     report+=  (`${key}/${table} có dữ liệu cần cập nhật ${dataFirebase.length}`);
-                    // lấy hết data từ github , concat data firebase với data github
+                     this.logger.log(`${key}/${table} data firese ${dataFirebase.length}`);
                     const tableKeyValue = await this.githubService.getTable(key, table); // { key: value}
-                     this.logger.log(`${key}/${table} before change ${Object.keys(tableKeyValue).length}`);
                     let update = 0 ;
                     let create = 0;
+                    const itemRemove = [];
                     for (const item of dataFirebase) {
                       if(tableKeyValue[item.id]) {
                          if(!_.isEqual(tableKeyValue[item.id],item )) {
                           tableKeyValue[item.id] = item;
                           update++;
+                         } else {
+                          // TODO remove
+                          if(item.id) {
+                            itemRemove.push(item.id);
+                          }
                          }
                       } else {
                         tableKeyValue[item.id] = item;
                         create++;
                       }
                     }
-                     this.logger.log(`${key}/${table} affter change update ${update} create ${create}`);
-                     report+=  (`${key}/${table} affter change update ${update} create ${create}`);
+                    // remove
+                    await this.firebase.deleteByIds(url,table, itemRemove,token);
+                    // for( const it of itemRemove) {
+                    //   if(it.id ) {
+                    //   const rs =  await this.firebase.deleteById(url,table,it.id , token ); 
+                    //     if(!rs.status) {
+                    //       this.logger.error('loi roi');
+                    //       break;
+                    //     }
+                    //   } else {
+                    //     this.logger.log('Khong co id');
+                    //   }
+                    // }
+                     this.logger.log(`${key}/${table} can remove ${itemRemove.length}`);
+                     this.logger.log(`${key}/${table} khac biet ${(create + update) }`);
                     // save file to google driver
-                    if( (create + update) > 0) {
-                        // paath
-                      const file = await this.saveMap(key, table, tableKeyValue);
-                      const fileBlob = await this.getFileBytes(file);
-                       this.logger.log(`${key}/${table} save file to google driver`);
-                      // save  driver to github
-                      await this.githubService.commitContent(fileBlob, `${key}/${table}`);
-                      // save araray to github
-                      
-                      const fileArray =  await this.saveAny(key, `${table}_array`, this.convertObjectsToArray(Object.values(tableKeyValue)));
-                      const fileArrayBlob = await this.getFileBytes(fileArray);
-                     await this.githubService.commitContent(fileArrayBlob , `${key}/${table}_array`);
-      
-                       this.logger.log(`${key}/${table} save driver to github`);
-                       report+=  (`${key}/${table} save driver to github`);
-          
-                      const maxSeqNo = Math.max(
-                        0,
-                        ...Object.values(dataFirebase).map((it) => Number(it.seqNo || 0))
-                      )
-                      // cập nhật map trong github
-                      const mapStr = {
-                        seqNo: maxSeqNo,
-                        total: Object.values(tableKeyValue).length,
-                        lastUpdated: new Date().toISOString()
-                      }
-                      this.logger.log(' mapStr -> ', mapStr);
-                    await this.githubService.commitJson( JSON.stringify(mapStr) ,`${key}/${table}_map`);
-                       this.logger.log(`${key}/${table} cập nhật map trong github`);
-                       report+=  (`${key}/${table} cập nhật map trong github`);
-                    } else {
-                       this.logger.log('Khong co du lieu can cap nhat');
-                       report+=  ('Khong co du lieu can cap nhat');
-                    }
+                    // if( (create + update) > 0) {
+                    //     // paath
+                    //   const file = await this.saveMap(key, table, tableKeyValue);
+                    //    this.logger.log(`${key}/${table} save driver to github`);
+                    // } else {
+                    //    this.logger.log('Khong co du lieu can cap nhat');
+                    // }
                     
                   } else {
                      this.logger.log('Khong co du lieu can cap nhat');
-                     report+=  ('Khong co du lieu can cap nhat');
                   }
-              }
             }
-            this.bot.pingFirebase(report);
           } catch (e) {
              this.logger.log(e);
             this.bot.pingFirebase(`Error brand ${key} ${e}`);
@@ -250,7 +186,7 @@ export class SyncFirebaseService {
       }    
       async saveAny(databaseName: string, tableName: string, data: any): Promise<string> {
         // Xác định đường dẫn của file dựa trên databaseName và tableName
-        const directoryPath = path.join('./data', databaseName);
+        const directoryPath = path.join('./data/removed', databaseName);
         const filePath = path.join(directoryPath, `${tableName}`);
         
         // Tạo chuỗi JSON từ dữ liệu
@@ -291,26 +227,5 @@ export class SyncFirebaseService {
           }, {});
         }
        return this.saveAny(databaseName,tableName,data);
-      }
-       convertObjectsToArray(objects) {
-        // Bước 1: Tạo một Set để lưu trữ tất cả các khóa duy nhất
-        const allKeys = new Set();
-        objects.forEach(obj => {
-          Object.keys(obj).forEach(key => {
-            allKeys.add(key);
-          });
-        });
-      
-        // Bước 2: Chuyển Set thành mảng và đây sẽ là dòng đầu tiên trong mảng kết quả
-        const keysArray = Array.from(allKeys);
-        const resultArray = [keysArray];
-      
-        // Bước 3: Chuyển từng đối tượng thành một mảng
-        objects.forEach((obj: any) => {
-          const row = keysArray.map((key: string) => obj[key] === undefined ? null : obj[key]);
-          resultArray.push(row);
-        });
-      
-        return resultArray;
       }
 }

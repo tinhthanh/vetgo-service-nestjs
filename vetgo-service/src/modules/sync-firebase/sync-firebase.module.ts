@@ -6,11 +6,12 @@ import { SyncFirebaseController } from "./sync-firebase.controller";
 import { SyncFirebaseService } from "./sync-firebase.service";
 import { CheckFirebaseService } from "./check-firebase.service";
 import { HttpModule } from "@nestjs/axios";
+import { ClearFirebaseService } from "./clear-firebase.service";
 
 @Module(
     {
         controllers: [SyncFirebaseController],
-        providers: [SyncFirebaseService,CheckFirebaseService],
+        providers: [SyncFirebaseService,CheckFirebaseService,ClearFirebaseService],
         exports: [],
         imports: [
             FirebaseUtilModule,
