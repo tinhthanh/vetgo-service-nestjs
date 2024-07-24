@@ -1,7 +1,9 @@
 # compiled output
 /dist
 /node_modules
-
+/data
+/.env
+/.env.dev
 # Logs
 logs
 *.log
@@ -33,8 +35,3 @@ lerna-debug.log*
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-/browser-profile/**
-/browser-plugin/**
-/data/**
-/mongo-data/**
-/petplus/**

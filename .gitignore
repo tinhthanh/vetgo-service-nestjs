@@ -1,7 +1,0 @@
-
-vetgo-service/browser-profile/**
-vetgo-service/browser-plugin/**
-/db/mongo/data/
-/vetgo-service/data
-/vetgo-service/mongo-data
-/vetgo-service/petplus/
