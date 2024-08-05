@@ -2,7 +2,8 @@ import { Body, Controller, Get, OnModuleDestroy, Post } from '@nestjs/common';
 import { ReqKeyPress, ReqOpenOnlyUrl, ReqSendKey } from '../dto/action.dtb';
 import { PuppeteerService } from '../service/puppeteer.service';
 // https://nowsecure.nl -> link test có phải là boss hay không
-
+// https://www.blackhatworld.com/ 
+// https://app.nansen.ai/auth/signup -> no block luon
 @Controller('puppeteer')
 export class PuppeteerController implements OnModuleDestroy {
   constructor(private readonly puppeteerService: PuppeteerService) {}

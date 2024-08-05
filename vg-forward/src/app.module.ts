@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-
+import { SyncModule } from "./sync/sync.module";
 import * as Joi from 'joi';
 import { SyncFirebaseModule } from './modules/sync-firebase/sync-firebase.module';
 @Module({
   imports: [
+    SyncModule,
     ConfigModule.forRoot({
       validationSchema: Joi.object({
         NODE_ENV: Joi.string()

@@ -33,6 +33,20 @@ export const enumRetailer = {
 export class SyncFirebaseService {
     private readonly logger = new Logger(SyncFirebaseService.name);
     private readonly  config = {
+      // [enumRetailer.petshop]: {
+      //   sheetId: "AKfycbzOO67gHrQFUig27Nb8jKl2TppU9JH30rL7mdjDptwiDDpjyyOJ08dffXmKckEMdh4RVg",
+      //   firebase: {
+      //     apiKey: "AIzaSyD1FBwmoxJnUUOMNyer5uKK3sTW-DrP-cI",
+      //     authDomain: "petshop-vet.firebaseapp.com",
+      //     databaseURL: "https://petshop-vet-default-rtdb.asia-southeast1.firebasedatabase.app",
+      //     projectId: "petshop-vet",
+      //     storageBucket: "petshop-vet.appspot.com",
+      //     messagingSenderId: "267283370817",
+      //     appId: "1:267283370817:web:c0a52c8f3e68f2aafa47c0",
+      //     measurementId: "G-12PSW860VC"
+      //   },
+      //   retailer: enumRetailer.petshop
+      // }
         'petplus2025': {
           firebase: {
             apiKey: "AIzaSyCEb0Gmc3Ull2ENRp78H6MUWOYFnF1iTVo",
@@ -150,11 +164,6 @@ export class SyncFirebaseService {
                 const blob = await this.getFileBytes(file);
               await this.githubService.commitContent(blob, `${key}/${table}`);
                 // save array driver to github
-                this.logger.log(`---- ${table}_array 1`);
-                const fileArray = await this.saveAny(key, `${table}_array`, this.convertObjectsToArray(Object.values(dataFirebase)));
-                const blobArray = await this.getFileBytes(fileArray);
-              await this.githubService.commitContent(blobArray , `${key}/${table}_array`);
-                this.logger.log(`---- ${table}_array 2`);
                 // init map -> maxSeqNo , total dataa
                 const maxSeqNo = Math.max(
                   0,
@@ -206,12 +215,6 @@ export class SyncFirebaseService {
                       // save  driver to github
                       await this.githubService.commitContent(fileBlob, `${key}/${table}`);
                       // save araray to github
-                      
-                      const fileArray =  await this.saveAny(key, `${table}_array`, this.convertObjectsToArray(Object.values(tableKeyValue)));
-                      const fileArrayBlob = await this.getFileBytes(fileArray);
-                     await this.githubService.commitContent(fileArrayBlob , `${key}/${table}_array`);
-      
-                       this.logger.log(`${key}/${table} save driver to github`);
                        report+=  (`${key}/${table} save driver to github`);
           
                       const maxSeqNo = Math.max(
@@ -291,26 +294,5 @@ export class SyncFirebaseService {
           }, {});
         }
        return this.saveAny(databaseName,tableName,data);
-      }
-       convertObjectsToArray(objects) {
-        // Bước 1: Tạo một Set để lưu trữ tất cả các khóa duy nhất
-        const allKeys = new Set();
-        objects.forEach(obj => {
-          Object.keys(obj).forEach(key => {
-            allKeys.add(key);
-          });
-        });
-      
-        // Bước 2: Chuyển Set thành mảng và đây sẽ là dòng đầu tiên trong mảng kết quả
-        const keysArray = Array.from(allKeys);
-        const resultArray = [keysArray];
-      
-        // Bước 3: Chuyển từng đối tượng thành một mảng
-        objects.forEach((obj: any) => {
-          const row = keysArray.map((key: string) => obj[key] === undefined ? null : obj[key]);
-          resultArray.push(row);
-        });
-      
-        return resultArray;
       }
 }

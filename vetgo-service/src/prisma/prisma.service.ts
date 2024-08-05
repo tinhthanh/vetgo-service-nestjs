@@ -13,6 +13,7 @@ export class PrismaService extends PrismaClient {
         },
       },
     });
+    console.log('configService : ' + configService.get('MONGO_DATABASE_URL'));
     console.log('configService : ' + configService.get('DATABASE_URL'));
   }
 }
