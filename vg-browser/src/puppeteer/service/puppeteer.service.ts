@@ -1,16 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import * as puppeteer2 from 'puppeteer';
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 import { Mutex } from 'async-mutex';
+import { debounceTime, Subject } from 'rxjs';
 
 puppeteer.use(StealthPlugin());
 
 @Injectable()
-export class PuppeteerService {
+export class PuppeteerService implements OnModuleDestroy {
   private profiles: Map<string, puppeteer2.Browser> = new Map();
   private browserPositions: Array<{ x: number, y: number }> = [];
   private mutex = new Mutex(); // hỗ trợ nhiều request vào đồng thời
+  private $closeBrowser = new Subject<string>();
 
   constructor() {
     const offsetX = 640; // Chiều rộng của cửa sổ trình duyệt
@@ -23,13 +25,30 @@ export class PuppeteerService {
         this.browserPositions.push({ x, y });
       }
     }
+    // 1p k ai dung thi tat trinh duyet
+    this.$closeBrowser.pipe(debounceTime(60*1000)).subscribe( () => {
+       this.closeAllBrowsers();
+    });
+  }
+  onModuleDestroy() {
+    this.closeAllBrowsers();
   }
 
   async closeAllBrowsers() {
-    await Promise.all([...this.profiles.values()].map((browser) => browser.close()));
+    for( let [ key , value ] of this.profiles) {
+      await this.mutex.runExclusive(async () => {
+        value.close().then(() => {
+          this.profiles.delete(key);
+        }).catch(()=> {
+          console.log(`Không thể tắt được ${key}`);
+          });
+       });
+    }
   }
 
   async getChromeDriver(userProfileId: string): Promise<puppeteer2.Browser> {
+    this.$closeBrowser.next(userProfileId);
+
     if (this.profiles.has(userProfileId)) {
       console.log('Returning existing profile ' + userProfileId);
       return this.profiles.get(userProfileId);

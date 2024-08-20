@@ -6,7 +6,7 @@ import * as path from 'path';
 import { Sema } from 'async-sema';
 
 @Controller('ocr')
-export class GoogleLenController implements OnModuleDestroy {
+export class GoogleLenController {
     private readonly semaphore: Sema;
     private readonly profiles: Set<string>;
     private readonly availableProfiles: string[];
@@ -15,10 +15,6 @@ export class GoogleLenController implements OnModuleDestroy {
         this.semaphore = new Sema(5); // Giới hạn tối đa 5 trình duyệt chạy đồng thời
         this.profiles = new Set();
         this.availableProfiles = ["profile1", "profile2", "profile3", "profile4", "profile5"];
-    }
-
-    onModuleDestroy() {
-        this.puppeteerService.closeAllBrowsers();
     }
 
     private acquireProfile(): string {
@@ -49,13 +45,13 @@ export class GoogleLenController implements OnModuleDestroy {
         const browser = await this.puppeteerService.getChromeDriver(profile);
         const page = await browser.newPage();
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
-        await page.setViewport({
-            width: 1920,
-            height: 1080,
-          });
-        await page.evaluateOnNewDocument(() => {
-            delete navigator['__proto__'].webdriver;
-        });
+        // await page.setViewport({
+        //     width: 1920,
+        //     height: 1080,
+        //   });
+        // await page.evaluateOnNewDocument(() => {
+        //     delete navigator['__proto__'].webdriver;
+        // });
         
         // Định nghĩa đường dẫn tệp tạm thời dựa trên profile
         const tempFilePath = path.join(__dirname, `${profile}-temp-image.png`);
@@ -131,9 +127,12 @@ export class GoogleLenController implements OnModuleDestroy {
             throw new Error('Failed to search image');
         } finally {
             // Đóng page và browser
-            await page.close();
-            console.log('page -> close');
-
+                try {
+                    await page.close();
+                    console.log('page -> close');
+                } catch (error) {
+                    console.error('cannot close');
+                }
             // Xoá tệp tin tạm thời
             if (fs.existsSync(tempFilePath)) {
                 fs.unlinkSync(tempFilePath);

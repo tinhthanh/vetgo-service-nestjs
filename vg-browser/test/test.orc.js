@@ -10,9 +10,14 @@ async function runStressTest() {
   for(let item of requestPromises) {
     console.log(item);
     try {
-        item.then((rs) => console.log(rs.data));
+        item.then((rs) => {
+          console.log(rs.data);
+          if( rs.status) {
+            console.log('error' , rs.status);
+          }
+        });
     } catch (error) {
-        console.error('One or more requests failed:', error);
+        console.error('One or more requests failed:', error.error);
       }
   }
 }
