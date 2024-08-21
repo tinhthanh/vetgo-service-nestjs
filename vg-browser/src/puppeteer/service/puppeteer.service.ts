@@ -4,6 +4,7 @@ const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 import { Mutex } from 'async-mutex';
 import { debounceTime, Subject } from 'rxjs';
+import { ConfigService } from '@nestjs/config';
 
 puppeteer.use(StealthPlugin());
 
@@ -14,7 +15,7 @@ export class PuppeteerService implements OnModuleDestroy {
   private mutex = new Mutex(); // hỗ trợ nhiều request vào đồng thời
   private $closeBrowser = new Subject<string>();
 
-  constructor() {
+  constructor(private readonly configService: ConfigService) {
     const offsetX = 640; // Chiều rộng của cửa sổ trình duyệt
     const offsetY = 480; // Chiều cao của cửa sổ trình duyệt
     const maxWidth = 1920; // Chiều rộng tối đa của màn hình
@@ -26,7 +27,7 @@ export class PuppeteerService implements OnModuleDestroy {
       }
     }
     // 1p k ai dung thi tat trinh duyet
-    this.$closeBrowser.pipe(debounceTime(60*1000)).subscribe( () => {
+    this.$closeBrowser.pipe(debounceTime(1*60*1000)).subscribe( () => {
        this.closeAllBrowsers();
     });
   }
@@ -35,6 +36,7 @@ export class PuppeteerService implements OnModuleDestroy {
   }
 
   async closeAllBrowsers() {
+    console.log('Close alll');
     for( let [ key , value ] of this.profiles) {
       await this.mutex.runExclusive(async () => {
         value.close().then(() => {
@@ -48,14 +50,12 @@ export class PuppeteerService implements OnModuleDestroy {
 
   async getChromeDriver(userProfileId: string): Promise<puppeteer2.Browser> {
     this.$closeBrowser.next(userProfileId);
-
-    if (this.profiles.has(userProfileId)) {
-      console.log('Returning existing profile ' + userProfileId);
-      return this.profiles.get(userProfileId);
-    }
-
     // Lock the mutex to ensure thread safety
     return await this.mutex.runExclusive(async () => {
+      if (this.profiles.has(userProfileId)) {
+        console.log('Returning existing profile ' + userProfileId);
+        return this.profiles.get(userProfileId);
+      }
       if (this.profiles.has(userProfileId)) {
         console.log('Returning existing profile after acquiring lock ' + userProfileId);
         return this.profiles.get(userProfileId);
@@ -74,13 +74,15 @@ export class PuppeteerService implements OnModuleDestroy {
         '--remote-allow-origins=*',
         '--disable-blink-features=AutomationControlled',
         '--excludeSwitches=enable-automation',
-        'useAutomationExtension=false',
+        // 'useAutomationExtension=false',
         `--window-position=${windowPosition.x},${windowPosition.y}`,
         `--window-size=640,480`, // Đảm bảo cửa sổ có kích thước nhất định
+        '--disable-gpu', 
+        '--disable-setuid-sandbox'
       ];
 
       const chromeOption = {
-        headless: false,
+        headless:  this.configService.get('HEADLESS'),
         args: customOptions,
         ignoreDefaultArgs: ['--enable-automation'],
       };

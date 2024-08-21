@@ -10,6 +10,7 @@ import { PuppeteerModule } from './puppeteer/puppeteer.module';
           .valid('development', 'production', 'test', 'provision', 'staging')
           .default('development'),
         PORT: Joi.number().default(3000),
+        HEADLESS: Joi.boolean().default(false)
       }),
       isGlobal: true,
       envFilePath: process.env.NODE_ENV === 'development' ? '.env.dev' : '.env',
