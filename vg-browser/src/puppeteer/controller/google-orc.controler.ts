@@ -16,6 +16,12 @@ export class GoogleLenController {
         this.semaphore = new Semaphore(5); // Giới hạn tối đa 5 trình duyệt chạy đồng thời
         this.profiles = new Set();
         this.availableProfiles = ["profile1", "profile2", "profile3", "profile4", "profile5"];
+       setTimeout(async ()=> {
+        for( let name of this.availableProfiles) {
+            await this.puppeteerService.getChromeDriver(name);
+            console.log('init ' , name);
+        }
+       }, 0);
     }
 
     private acquireProfile(): string {
@@ -47,8 +53,15 @@ export class GoogleLenController {
         const profile = this.acquireProfile();
         const browser = await this.puppeteerService.getChromeDriver(profile);
         const page = await browser.newPage();
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
 
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+        await page.setViewport({
+        width: 1920,
+        height: 1080,
+        });
+        await page.evaluateOnNewDocument(() => {
+            delete navigator['__proto__'].webdriver;
+        });
         const tempFilePath = path.join(__dirname, `${profile}-temp-image.png`);
 
         try {
@@ -72,8 +85,11 @@ export class GoogleLenController {
             }
 
             fs.writeFileSync(tempFilePath, imageBuffer);
-
+            // TODO giup toi chup anh man hinh va luu lai
+            const screenshotPath = path.join(__dirname, `${profile}-screenshot.png`);
+            await page.screenshot({ path: screenshotPath });
             const fileInput = await page.waitForSelector('input[type="file"]', { timeout: 60000 });
+          
             await fileInput.uploadFile(tempFilePath);
 
             if (page.isClosed()) {
