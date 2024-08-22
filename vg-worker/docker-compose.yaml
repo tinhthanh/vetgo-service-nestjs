@@ -1,0 +1,22 @@
+# using for dev
+version: '3.8'
+services:
+    vg-worker-redis:
+        image: redis:alpine
+        container_name: vg-worker-redis
+        expose:
+            - 6379
+        ports:
+            - 6201:6379 # public port để test mutiple worker     
+        restart: unless-stopped 
+    vg-worker-redis-commander: 
+        container_name: vg-worker-redis-commander
+        image: rediscommander/redis-commander:latest
+        environment:
+          - REDIS_HOSTS=local:vg-worker-redis:6379
+        ports:
+          - '6202:8081'
+        depends_on:
+          - vg-worker-redis
+networks:
+    vg-worker:
