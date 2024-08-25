@@ -37,7 +37,6 @@ export class GptController {
   
     @Post()
     @Sse()
-    @Throttle({ default: { limit: 1, ttl: 1000 } })
      prompts(@Body() body: {prompt: string, format?:'text' | 'html' }): Observable<MessageEvent | string> {
      return new Observable<MessageEvent | string>(observer => {
 

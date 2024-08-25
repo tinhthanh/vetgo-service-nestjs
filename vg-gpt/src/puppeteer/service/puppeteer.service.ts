@@ -129,7 +129,6 @@ export class PuppeteerService implements OnModuleDestroy {
       }
       const profileUrl = `browser-profile/${userProfileId}`;
       const profilePath = `${profileUrl}`;
-      const pathToExtension = 'browser-plugin';
 
       const positionIndex = this.profiles.size % this.browserPositions.length;
       const windowPosition = this.browserPositions[positionIndex];
@@ -149,17 +148,18 @@ export class PuppeteerService implements OnModuleDestroy {
       ];
       const chromeOption = {
         headless:  this.configService.get('HEADLESS'),
-        args: customOptions
+        args: customOptions,
+        ignoreDefaultArgs: ['--enable-automation'],
       };
-      const browser = await puppeteer.launch(chromeOption);
-      this.profiles.set(userProfileId, browser);
-      const backgroundPageTarget = await browser.waitForTarget(
-        (target) => target.type() === 'background_page',
-      );
-      const backgroundPage = await backgroundPageTarget.page();
-      console.log(backgroundPage.url());
-      console.log('Tao profile moi ' + userProfileId);
-      return this.profiles.get(userProfileId);
+      try {
+        const browser = await puppeteer.launch(chromeOption);
+        this.profiles.set(userProfileId, browser);
+        console.log('Created new profile ' + userProfileId);
+        return browser;
+      } catch (error) {
+        console.error('Failed to launch browser:', error);
+        throw error;
+      }
      })
     
   }
