@@ -13,9 +13,9 @@ export class GoogleLenController {
     private readonly availableProfiles: string[];
 
     constructor(private readonly puppeteerService: PuppeteerService) {
-        this.semaphore = new Semaphore(5); // Giới hạn tối đa 5 trình duyệt chạy đồng thời
-        this.profiles = new Set();
         this.availableProfiles = ["profile1", "profile2", "profile3", "profile4", "profile5"];
+        this.semaphore = new Semaphore(this.availableProfiles.length); // Giới hạn tối đa 5 trình duyệt chạy đồng thời
+        this.profiles = new Set();
        setTimeout(async ()=> {
         for( let name of this.availableProfiles) {
             await this.puppeteerService.getChromeDriver(name);

@@ -53,14 +53,9 @@ export class PuppeteerService implements OnModuleDestroy {
     // Lock the mutex to ensure thread safety
     return await this.mutex.runExclusive(async () => {
       if (this.profiles.has(userProfileId)) {
-        console.log('Returning existing profile ' + userProfileId);
-        return this.profiles.get(userProfileId);
-      }
-      if (this.profiles.has(userProfileId)) {
         console.log('Returning existing profile after acquiring lock ' + userProfileId);
         return this.profiles.get(userProfileId);
       }
-
       const profileUrl = `browser-profile/${userProfileId}`;
       const profilePath = `${profileUrl}`;
 
