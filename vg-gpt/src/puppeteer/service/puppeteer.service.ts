@@ -141,16 +141,11 @@ export class PuppeteerService implements OnModuleDestroy {
         '--remote-allow-origins=*',
         '--disable-blink-features=AutomationControlled',
         '--excludeSwitches=enable-automation',
-        `--disable-extensions-except=${pathToExtension}`,
-        `--load-extension=${pathToExtension}`,
-        // `useAutomationExtension=false`,
-        '--disable-infobars',
-        '--start-maximized',
-        '--disable-setuid-sandbox',
-        '--disable-accelerated-2d-canvas',
-        '--disable-gpu',
+        // 'useAutomationExtension=false',
         `--window-position=${windowPosition.x},${windowPosition.y}`,
         `--window-size=640,480`, // Đảm bảo cửa sổ có kích thước nhất định
+        '--disable-gpu', 
+        '--disable-setuid-sandbox'
       ];
       const chromeOption = {
         headless:  this.configService.get('HEADLESS'),
