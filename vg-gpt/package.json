@@ -7,8 +7,8 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
-    "build:docker": "npm run build && docker build -t tinhthanh/vg-gpt:1.0.2 .",
-    "docker:push": "docker push tinhthanh/vg-gpt:1.0.2",
+    "build:docker": "npm run build && docker build -t tinhthanh/vg-gpt:1.0.3 .",
+    "docker:push": "docker push tinhthanh/vg-gpt:1.0.3",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "NODE_ENV=development nest start --watch",
