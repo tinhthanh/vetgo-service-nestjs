@@ -8,20 +8,20 @@ import { ThrottlerModule } from '@nestjs/throttler';
   imports: [
     ThrottlerModule.forRoot([
       {
-        name: 'short',
-        ttl: 1000,
-        limit: 1,
+        name: 'short', // 5 request trong 20 giay
+        ttl: 20000,
+        limit: 5,
       },
-      {
-        name: 'medium',
-        ttl: 10000,
-        limit: 3
-      },
-      {
-        name: 'long',
-        ttl: 60000,
-        limit: 15
-      }
+      // {
+      //   name: 'medium',
+      //   ttl: 10000,
+      //   limit: 3
+      // },
+      // {
+      //   name: 'long',
+      //   ttl: 60000,
+      //   limit: 15
+      // }
     ])
   ],
   controllers: [PuppeteerController, GptController],

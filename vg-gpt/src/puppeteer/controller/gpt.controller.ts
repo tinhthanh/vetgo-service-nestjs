@@ -21,9 +21,9 @@ export class GptController {
   private readonly profiles: Set<string>;
   private readonly availableProfiles: string[];
   private readonly sessions: Map<string, BehaviorSubject<MessageEvent>>;
-
+  // chỉ hỗ trợ 5 request đồng thời trong 20s , nhiều hơn trả về mã lỗi 429
   constructor(private readonly puppeteerService: PuppeteerService) {
-    this.availableProfiles = ['profile1', 'profile2', 'profile3'];
+    this.availableProfiles = ['profile1', 'profile2', 'profile3','profile4', 'profile5','profile6'];
     this.semaphore = new Semaphore(this.availableProfiles.length);
     this.profiles = new Set();
     this.sessions = new Map();
@@ -170,7 +170,7 @@ export class GptController {
                
               const node = el.querySelector('code');
               if (node) {
-                const type = el.querySelector('.markdown pre span').innerText;
+                const type =  ([...node.classList].find( it => it.startsWith('language-')) || '').replace('language-' , '');
                 if ((document.body as any).createTextRange) {
                   const range = (document.body as any).createTextRange();
                   range.moveToElementText(node);

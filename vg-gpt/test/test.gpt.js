@@ -2,9 +2,9 @@
 const axios = require('axios');
 
 async function runStressTest() {
-  const requestPromises = Array(1).fill(null).map(() =>
+  const requestPromises = Array(10).fill(null).map(() =>
     axios.post('http://localhost:8200/prompts', {
-      prompt: 'Xin chao',
+      prompt: 'Lịch trình du lịch đồng tháp 3 ngày 2 đêm',
     })
   );
   for(let item of requestPromises) {
