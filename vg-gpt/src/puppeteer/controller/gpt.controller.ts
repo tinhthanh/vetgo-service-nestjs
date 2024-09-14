@@ -117,27 +117,37 @@ export class GptController {
       await page.waitForSelector(selector);
       await page.focus(selector);
       const textLen = this.getRandomDelay(5, 10);
+      console.log(textLen);
       const firstPart = prompt.slice(0, textLen);
+      console.log(firstPart);
       for (const char of firstPart) {
         await page.keyboard.type(char, {
           delay: this.getRandomDelay(100, 300),
         });
       }
 
-      const remainingText = prompt.slice(textLen);
+      const remainingText = firstPart + prompt.slice(textLen);
+      console.log(remainingText);
       await page.evaluate(
         (selector, remainingText) => {
-          const input = document.querySelector(selector) as HTMLInputElement;
+          const input = document.querySelector(selector) as HTMLDivElement;
           if (input) {
-            input.value += remainingText;
-            const event = new Event('input', { bubbles: true });
-            input.dispatchEvent(event);
+            input.innerText = remainingText;
+            // const event = new Event('input', { bubbles: true });
+            // input.dispatchEvent(event);
           }
         },
         selector,
         remainingText,
       );
-      console.log(`end step input text`);
+      const textSend =  await page.evaluate(
+        (selector) => {
+          const input = document.querySelector(selector) as HTMLDivElement;
+          return input.innerText;
+        },
+        selector
+      );
+      console.log(`end step input text: `, textSend);
       await new Promise((resolve) =>
         setTimeout(resolve, this.getRandomDelay(500, 2000)),
       );
