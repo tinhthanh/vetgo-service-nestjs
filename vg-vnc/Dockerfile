@@ -17,8 +17,8 @@ RUN apk add --no-cache \
     fluxbox \
     bash \
     git \
-    supervisor
-
+    supervisor \
+    nginx
 
 RUN mkdir -p /var/log/supervisor && \
     chmod 755 /var/log/supervisor
@@ -35,22 +35,24 @@ COPY dist ./dist
 # Copy file package.json và package-lock.json vào thư mục làm việc
 COPY package*.json ./
 
-
 # Cài đặt production dependencies
 RUN npm install --legacy-peer-deps --only=production
 
 # Thiết lập biến môi trường cho Puppeteer
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PORT=9200
+ENV PORT=9201
 ENV HEADLESS=false
 ENV DISPLAY=:1
 
 # Copy file cấu hình supervisor
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Command để khởi động supervisor và chạy noVNC, x11vnc
+# Copy file cấu hình nginx
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Command để khởi động supervisor và chạy noVNC, x11vnc, nginx
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
 
-# Chỉ định các cổng mà ứng dụng sẽ lắng nghe
-EXPOSE 9200 5900 6080
+# Chỉ định cổng mà ứng dụng sẽ lắng nghe
+EXPOSE 9200 9201 6080
