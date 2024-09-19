@@ -1,0 +1,26 @@
+{
+  "name": "consumer-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/consumer-service/src",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "dependsOn": ["build"],
+      "options": {
+        "buildTarget": "consumer-service:build",
+        "runBuildTargetDependencies": false
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "consumer-service:build:development"
+        },
+        "production": {
+          "buildTarget": "consumer-service:build:production"
+        }
+      }
+    }
+  }
+}
