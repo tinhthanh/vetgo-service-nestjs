@@ -204,7 +204,7 @@ export class GptController {
                 (window as any).emitMessage({message:  el.innerHTML , type: "", value: ""});
               }
 
-                await new Promise((resolve) => setTimeout(resolve, 100));
+                await new Promise((resolve) => setTimeout(resolve, 150 ));
             }
           }
         },
