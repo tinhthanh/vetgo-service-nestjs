@@ -29,13 +29,7 @@ constructor(private configService: ConfigService) {
 @Get('send')
 sendMessage() {
   console.log(`send message to Producer`);
-  return this.client
-    .send('message_pattern', { text: 'Hello from gateway!' });
+   this.client
+    .send('message_pattern', { text: 'Hello from gateway!' }).subscribe();
 }
-@Get('send-zalo')
-sendToZaloProducer() {
-  console.log(`send message to Producer`);
-  return this.client
-    .send('message_pattern_zalo_profile', { text: 'Hello from gateway! message_pattern_zalo_profile' });
-  }
 }

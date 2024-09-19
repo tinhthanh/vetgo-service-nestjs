@@ -1,8 +1,15 @@
 import { Controller } from '@nestjs/common';
 import { Ctx, MessagePattern, Payload, RmqContext } from '@nestjs/microservices';
+import { VgWebSocketService } from './ws/vg-websocket.service';
+import { ConfigService } from '@nestjs/config';
 
 @Controller()
-export class AppController {
+export class AppController extends VgWebSocketService  {
+  constructor(private configService: ConfigService) { // Inject ConfigService
+    super();
+    const url = this.configService.get<string>('WS');
+    this.connect(`${url}/ws`);
+  }
 @MessagePattern('message_pattern')
 public async execute(@Payload() data: any, @Ctx() context: RmqContext) {
   const channel = context.getChannelRef();
@@ -36,5 +43,6 @@ async mySuperLongProcessOfUser(data: any, clientId: string) {
 }
   sendProgress(progress: number, clientId: string) {
     // send process to websocket
+    this.sendMessage('browser-task', {progress, clientId}).subscribe();
   }
 }

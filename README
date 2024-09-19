@@ -1,0 +1,8 @@
+# npm install -g nx
+# npx create-nx-workspace@latest zalo-microservices
+# cd zalo-microservices
+# nx generate @nrwl/nest:application producer-service -> Chọn Derived
+# nx generate @nrwl/nest:application consumer-service -> Chọn Derived
+ 
+# nx generate @nrwl/nest:library shared-utils
+ 

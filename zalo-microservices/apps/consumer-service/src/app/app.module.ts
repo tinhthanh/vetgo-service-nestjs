@@ -14,7 +14,8 @@ import { ConfigModule } from '@nestjs/config';
         HEADLESS: Joi.boolean().default(false),
         AMQP_URL: Joi.string().required(),
         QUEUE_NAME_PRODUCER: Joi.string().required(),
-        QUEUE_NAME_CONSUMER: Joi.string().required()
+        QUEUE_NAME_CONSUMER: Joi.string().required(),
+        WS: Joi.string().required()
       }),
       isGlobal: true,
       envFilePath: process.env.NODE_ENV === 'development' ? '../.env.dev' : '../.env',

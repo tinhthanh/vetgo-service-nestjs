@@ -142,9 +142,9 @@ export class PuppeteerService implements OnModuleDestroy {
       const customOptions = [
         '--no-sandbox',
         // '--disable-dev-shm-usage',
-        // `--user-data-dir=${profilePath}`,
+        `--user-data-dir=${profilePath}`,
         // '--remote-allow-origins=*',
-        // '--disable-blink-features=AutomationControlled',
+        '--disable-blink-features=AutomationControlled',
         // '--excludeSwitches=enable-automation',
         // `--window-position=${windowPosition.x},${windowPosition.y}`,
         `--window-size=640,480`, // Đảm bảo cửa sổ có kích thước nhất định

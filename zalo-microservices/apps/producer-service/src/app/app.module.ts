@@ -3,7 +3,7 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi';
-
+import { VgVsModule } from './ws/vg-ws.module';
 @Module({
   imports: [
    ConfigModule.forRoot({
@@ -15,7 +15,8 @@ import * as Joi from 'joi';
       HEADLESS: Joi.boolean().default(false),
       AMQP_URL: Joi.string().required(),
       QUEUE_NAME_PRODUCER: Joi.string().required(),
-      QUEUE_NAME_CONSUMER: Joi.string().required()
+      QUEUE_NAME_CONSUMER: Joi.string().required(),
+      WS: Joi.string().required()
     }),
     isGlobal: true,
     envFilePath: process.env.NODE_ENV === 'development' ? '../.env.dev' : '../.env',
@@ -24,7 +25,8 @@ import * as Joi from 'joi';
     validationOptions: {
       abortEarly: false,
     }
-  })
+  }),
+  VgVsModule
 ],
   controllers: [AppController],
   providers: [],
