@@ -6,6 +6,7 @@
     "start:api-gateway": "nx serve api-gateway",
     "start:producer-service": "nx serve producer-service",
     "start:consumer-service": "nx serve consumer-service",
+    "start:chrome-profile": "nx serve chrome-profile",
     "start:all": "concurrently \"npm run start:api-gateway\" \"npm run start:producer-service\" \"npm run start:consumer-service\""
   },
   "private": true,

@@ -35,7 +35,7 @@ async function bootstrap() {
   });
 
   await microservice.listen();
-  console.log(`Consumer Service is running on queue: ${queueName}`);
+  console.log(`Consumer chrome profile Service is running on queue: ${queueName}`);
 }
 
 bootstrap();

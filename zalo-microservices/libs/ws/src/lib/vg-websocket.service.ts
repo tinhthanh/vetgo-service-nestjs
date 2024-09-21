@@ -6,7 +6,7 @@ import SockJS from 'sockjs-client';
 
 import { RxStompConfig } from './stomp/rx-stomp-config';
 import { RxStompState } from './stomp/rx-stomp-state';
-export class VgWebSocketService {
+export class VgWsService {
   private readonly prefix = '/topic/messages';
   private rxStomp!: RxStomp;
   private topicPool: Map<string, Subject<IMessage>> = new Map<string, Subject<IMessage>>();

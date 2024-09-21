@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 
-import { AppController } from './app.controller';
 import * as Joi from 'joi';
 import { ConfigModule } from '@nestjs/config';
+import { TaskController } from './task/task.controller';
+import { WsModule } from '@vg/ws';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -24,9 +25,10 @@ import { ConfigModule } from '@nestjs/config';
       validationOptions: {
         abortEarly: false,
       }
-    })
+    }),
+    WsModule
   ],
-  controllers: [AppController],
+  controllers: [TaskController],
   providers: [],
 })
 export class AppModule {}

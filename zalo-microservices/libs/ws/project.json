@@ -1,0 +1,9 @@
+{
+  "name": "ws",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/ws/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project ws --web",
+  "targets": {}
+}

@@ -1,10 +1,9 @@
 import { Controller } from '@nestjs/common';
-import { Ctx, MessagePattern, Payload, RmqContext } from '@nestjs/microservices';
-import { VgWebSocketService } from './ws/vg-websocket.service';
 import { ConfigService } from '@nestjs/config';
-
+import { Ctx, MessagePattern, Payload, RmqContext } from '@nestjs/microservices';
+import { VgWsService } from '@vg/ws';
 @Controller()
-export class AppController extends VgWebSocketService  {
+export class TaskController extends VgWsService {
   constructor(private configService: ConfigService) { // Inject ConfigService
     super();
     const url = this.configService.get<string>('WS');
@@ -20,8 +19,8 @@ public async execute(@Payload() data: any, @Ctx() context: RmqContext) {
   await this.mySuperLongProcessOfUser(data, clientId);
 
   channel.ack(originalMessage);
+
 }
-// gia lap thoi gian thuc thi task
 async mySuperLongProcessOfUser(data: any, clientId: string) {
   return new Promise(resolve => {
     let progress = 0;
@@ -43,6 +42,7 @@ async mySuperLongProcessOfUser(data: any, clientId: string) {
 }
   sendProgress(progress: number, clientId: string) {
     // send process to websocket
+    console.log(progress);
     this.sendMessage('browser-task', {progress, clientId}).subscribe();
   }
 }

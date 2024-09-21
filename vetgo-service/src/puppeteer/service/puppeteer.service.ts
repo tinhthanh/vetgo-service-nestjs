@@ -113,6 +113,10 @@ export class PuppeteerService {
       `useAutomationExtension=false`,
       '--disable-infobars',
       '--start-maximized',
+      '--disable-setuid-sandbox',
+      '--disable-accelerated-2d-canvas',
+      '--disable-gpu',
+      '--window-size=1920x1080',
     ];
     const chromeOption = {
       headless: false,
@@ -177,7 +181,34 @@ export class PuppeteerService {
       "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})",
     );
 
-    await page1.goto(url);
+    const blankPage = await browser.newPage();
+    await blankPage.goto('about:blank');
+  
+    // Truy cập trang web cần vượt qua Cloudflare từ tab blank
+    await blankPage.goto(url, {
+      waitUntil: 'networkidle2', // Đợi cho đến khi không còn kết nối mạng nào đang hoạt động
+      timeout: 0 // Tăng thời gian chờ để xử lý Cloudflare
+    });
+  
+    // Chuyển điều khiển sang tab blank
+    await blankPage.bringToFront();
+    
+    // await page1.goto(url,{ waitUntil: 'networkidle2', timeout: 0 });
+    // await page1.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+    // await page1.setExtraHTTPHeaders({
+    //   'accept-language': 'en-US,en;q=0.9',
+    //   'accept-encoding': 'gzip, deflate, br'
+    // });
+    // await page1.goto('https://google.com'); 
+  // const targetUrl = url;
+  // Tạo và thêm liên kết vào trang, sau đó nhấp vào liên kết
+  // await page1.evaluate((url) => {
+  //   const iframe = document.createElement('iframe');
+  //   iframe.src = url;
+  //   iframe.style.width = '100%'; 
+  //   iframe.style.height = '100%';
+  //   document.body.appendChild(iframe);
+  // }, targetUrl);
   }
   // lấy hết url đang mở
   private async currentTabs(browser: puppeteer2.Browser): Promise<string[]> {
