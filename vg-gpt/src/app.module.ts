@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi';
 import { PuppeteerModule } from './puppeteer/puppeteer.module';
@@ -25,7 +23,7 @@ import { PuppeteerModule } from './puppeteer/puppeteer.module';
     }),
     PuppeteerModule
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}

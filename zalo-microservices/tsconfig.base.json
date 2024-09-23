@@ -15,6 +15,7 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@vg/common": ["libs/common/src/index.ts"],
       "@vg/ws": ["libs/ws/src/index.ts"]
     }
   },

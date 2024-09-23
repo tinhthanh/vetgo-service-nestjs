@@ -26,6 +26,7 @@ async function bootstrap() {
   });
 
   await app.startAllMicroservices();
+  app.enableCors();
   await app.listen(port);
   console.log(`API Gateway is running on http://localhost:${port}`);
 }

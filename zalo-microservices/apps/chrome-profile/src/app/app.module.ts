@@ -3,7 +3,8 @@ import { Module } from '@nestjs/common';
 import * as Joi from 'joi';
 import { ConfigModule } from '@nestjs/config';
 import { TaskController } from './task/task.controller';
-import { WsModule } from '@vg/ws';
+import { PuppeteerService } from './puppeteer.service';
+import { JobScratchService } from './job-scratch.service';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -19,16 +20,15 @@ import { WsModule } from '@vg/ws';
         WS: Joi.string().required()
       }),
       isGlobal: true,
-      envFilePath: process.env.NODE_ENV === 'development' ? '../.env.dev' : '../.env',
+      envFilePath: process.env.NODE_ENV === 'development' ? '.env.dev' : '.env',
       cache: true, // <== Ở đây
       expandVariables: true, // <== Ở đây ${} // nối các biết lại
       validationOptions: {
         abortEarly: false,
       }
-    }),
-    WsModule
+    })
   ],
   controllers: [TaskController],
-  providers: [],
+  providers: [PuppeteerService, JobScratchService],
 })
 export class AppModule {}
