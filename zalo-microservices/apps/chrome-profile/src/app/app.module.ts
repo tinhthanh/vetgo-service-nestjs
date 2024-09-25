@@ -2,9 +2,11 @@ import { Module } from '@nestjs/common';
 
 import * as Joi from 'joi';
 import { ConfigModule } from '@nestjs/config';
-import { TaskController } from './task/task.controller';
 import { PuppeteerService } from './puppeteer.service';
 import { JobScratchService } from './job-scratch.service';
+import { TaskService } from './task.service';
+import { HttpModule } from '@nestjs/axios';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -26,9 +28,10 @@ import { JobScratchService } from './job-scratch.service';
       validationOptions: {
         abortEarly: false,
       }
-    })
+    }),
+    HttpModule
   ],
-  controllers: [TaskController],
-  providers: [PuppeteerService, JobScratchService],
+  controllers: [],
+  providers: [PuppeteerService, JobScratchService, TaskService],
 })
 export class AppModule {}

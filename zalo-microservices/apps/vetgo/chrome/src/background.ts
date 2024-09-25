@@ -1,135 +1,126 @@
 import { LoadScriptController } from "./controllers/load-script.controller";
-import {BehaviorSubject, debounceTime, Observable, of} from "rxjs";
-import {DeviceRemoteService} from "./services/device-remote.service";
-import {CommonFunc} from "./controllers/load-common-fuc.controller";
-import {uuid} from "./utils/db-utils";
-// const $eventOpenZalo = new BehaviorSubject<boolean>(null);
-// const deviceRemoteService = new DeviceRemoteService();
-// $eventOpenZalo.pipe(
-//   debounceTime(1000)
-// ).subscribe((it)=> {
-//   if(it) {
-//     zaloTab();
-//   }
-// })
-const HEADERS_TO_STRIP_LOWERCASE = [
-  'content-security-policy',
-  'x-frame-options',
-];
-chrome.webRequest.onHeadersReceived.addListener((details) =>{
-    return {
-      responseHeaders: details.responseHeaders.filter(function(header) {
-        return HEADERS_TO_STRIP_LOWERCASE.indexOf(header.name.toLowerCase()) < 0;
-      })
-    };
-  }, {
-    urls: ["<all_urls>"]
-  }, ["blocking", "responseHeaders"]);
+import { Observable } from "rxjs";
+import { CommonFunc } from "./controllers/load-common-fuc.controller";
+import { uuid } from "./utils/db-utils";
 
-chrome.webRequest.onBeforeRequest.addListener(
-  function(details) {
-    const url = new URL(details.url);
-    const params = new URLSearchParams(url.search);
-    const sheetID = params.get('sheetID');
-    if (details.method === 'GET' && sheetID) {
-      console.log('Found GET request with phone=ABC:', details.url);
-      // Thực hiện các hành động khác với yêu cầu này
-      chrome.tabs.executeScript(details.tabId, {
-        code: 'localStorage.setItem("sheetID", "' + sheetID + '");'
-      }, function() {
-        console.log('phoneParam saved to local storage of the current domain:', sheetID);
-      });
-    }
-    const profile = params.get('profile');
-    if (details.method === 'GET' && profile) {
-      console.log('Found GET request with phone=ABC:', details.url);
-      // Thực hiện các hành động khác với yêu cầu này
-      chrome.tabs.executeScript(details.tabId, {
-        code: 'localStorage.setItem("phone", "' + profile + '");'
-      }, function() {
-        console.log('phoneParam saved to local storage of the current domain:', profile);
-      });
-    }
-  },
-  { urls: ['<all_urls>'] },
-  ['blocking']
-);
+// Sử dụng declarativeNetRequest thay cho webRequest để tương thích với manifest v3
+// chrome.declarativeNetRequest.updateDynamicRules({
+//   addRules: [
+//     {
+//       id: 1,
+//       priority: 1,
+//       action: {
+//         type: 'modifyHeaders',
+//         responseHeaders: [
+//           { header: 'content-security-policy', operation: 'remove' },
+//           { header: 'x-frame-options', operation: 'remove' }
+//         ]
+//       },
+//       condition: {
+//         urlFilter: '*',
+//         resourceTypes: ['main_frame', 'sub_frame']
+//       }
+//     }
+//   ],
+//   removeRuleIds: [1]
+// });
+
+// // Lắng nghe các yêu cầu trước khi gửi
+// chrome.declarativeNetRequest.updateDynamicRules({
+//   addRules: [
+//     {
+//       id: 2,
+//       priority: 1,
+//       action: { type: 'allow' },
+//       condition: {
+//         urlFilter: '*',
+//         resourceTypes: ['main_frame', 'sub_frame']
+//       }
+//     }
+//   ],
+//   removeRuleIds: [2]
+// });
+
+// Chuyển đổi từ chrome.tabs.executeScript sang chrome.scripting.executeScript
+// chrome.webRequest.onBeforeRequest.addListener(
+//   async (details) => {
+//     const url = new URL(details.url);
+//     const params = new URLSearchParams(url.search);
+//     const sheetID = params.get('sheetID');
+//     if (details.method === 'GET' && sheetID) {
+//       console.log('Found GET request with sheetID:', details.url);
+//       // Sử dụng chrome.scripting để thực thi đoạn mã trong tab
+//       await chrome.scripting.executeScript({
+//         target: { tabId: details.tabId },
+//         func: (sheetID) => {
+//           localStorage.setItem("sheetID", sheetID);
+//         },
+//         args: [sheetID]
+//       });
+//       console.log('sheetID saved to local storage of the current domain:', sheetID);
+//     }
+//     const profile = params.get('profile');
+//     if (details.method === 'GET' && profile) {
+//       console.log('Found GET request with profile:', details.url);
+//       await chrome.scripting.executeScript({
+//         target: { tabId: details.tabId },
+//         func: (profile) => {
+//           localStorage.setItem("profile", profile);
+//         },
+//         args: [profile]
+//       });
+//       console.log('profile saved to local storage of the current domain:', profile);
+//     }
+//   },
+//   { urls: ['<all_urls>'] },
+//   []
+// );
 
 chrome.webNavigation.onBeforeNavigate.addListener((details) => {
   // Log the URL of the navigation
   console.log('Navigating to:', details.url);
   chrome.tabs.query({ currentWindow: true }, (tabs) => {
-    tabs.filter( url => url.url.includes('id.zalo.me')).forEach( (it) => {
-      if(it.id !== details.tabId) {
+    tabs.filter((url) => url.url.includes('id.zalo.me')).forEach((it) => {
+      if (it.id !== details.tabId) {
         chrome.tabs.remove(it.id);
       }
-    })
-  })
-
+    });
+  });
 }, { url: [{ hostEquals: 'id.zalo.me' }] });
-const getChromeId = ():Observable<string> =>{
+
+// Sử dụng rxjs Observable để lấy chromeId
+const getChromeId = (): Observable<string> => {
   return new Observable((ob) => {
-    chrome.storage.sync.get(({id}) => {
-      if(!id) {
-       const chromeId =  uuid();
-        chrome.storage.sync.set({id: chromeId});
+    chrome.storage.sync.get(({ id }) => {
+      if (!id) {
+        const chromeId = uuid();
+        chrome.storage.sync.set({ id: chromeId });
         ob.next(chromeId);
       } else {
         ob.next(id);
       }
-    })
+    });
   });
-}
+};
+
+// Khi extension được cài đặt
 chrome.runtime.onInstalled.addListener((data) => {
   getChromeId().subscribe((id) => {
-    console.log("id",id);
+    console.log("id", id);
   });
-  // chrome.storage.sync.clear(() => console.log("Clear store......"));
-  // chrome.cookies.getAll({}, function(cookies) {
-  //   var json = JSON.stringify(cookies);
-  //   var blob = new Blob([json], {type: "application/json"});
-  //   var url = URL.createObjectURL(blob);
-  //
-  //   chrome.downloads.download({
-  //     url: url,
-  //     filename: "cookies.json"
-  //   });
-  // });
 });
-// function zaloTab() {
-//   chrome.tabs.query({ currentWindow: true }, (tabs) => {
-//     const isNewTab = tabs.map(tab => tab.url).some( url => url.includes('chat.zalo.me') || url.includes('id.zalo.me'));
-//     if(!isNewTab) {
-//       chrome.tabs.create({ url: 'https://chat.zalo.me', active: false });
-//     }
-//   });
-// }
-// Listen for tab removal
-// chrome.tabs.onActivated.addListener((activeInfo) => {
-//   $eventOpenZalo.next(true);
-// });
-// chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
-//   $eventOpenZalo.next(true);
-// });
-chrome.tabs.onCreated.addListener((tab) => {
-  // console.log(JSON.stringify(tab));
-  // alert(JSON.stringify(tab))
-});
-chrome.cookies.onChanged.addListener((changeInfo) => {
-  // console.log(JSON.stringify(changeInfo.cookie))
-});
+
+// Lắng nghe các message gửi tới extension
 chrome.runtime.onMessage.addListener((request, sender, respond) => {
-  console.log(sender.tab ?
-    "from a content script:" + sender.tab.url :
-    "from the extension");
+  console.log(sender.tab ? "from a content script:" + sender.tab.url : "from the extension");
   const handler = new Promise((resolve, reject) => {
-    if ( request.action === 'REMOVE_EXTENSION' ) {
-      // ham nay de tu xoa extension
+    if (request.action === 'REMOVE_EXTENSION') {
+      // Tự gỡ bỏ extension
       chrome.management.uninstallSelf();
       resolve(request);
       return;
     }
-    if(request.action === 'SHEET') {
+    if (request.action === 'SHEET') {
       resolve(request);
       return;
     }
@@ -137,22 +128,21 @@ chrome.runtime.onMessage.addListener((request, sender, respond) => {
       const actionType = request.actionType || "MAIN";
       getChromeId().subscribe((id) => {
         console.log(id);
-        CommonFunc.load().then((commonCode)=> {
+        CommonFunc.load().then((commonCode) => {
           LoadScriptController.loadScriptByDomain(request.domain, actionType).then((code) => {
             let script = `
-          window.vetgo = {...(window.vetgo || {} ) ,chromeId:"${id}"};
-          ${commonCode}
-          ${code}
-          `;
+              window.vetgo = {...(window.vetgo || {} ) ,chromeId:"${id}"};
+              ${commonCode}
+              ${code}
+            `;
             resolve({ script });
           });
-        })
-      })
+        });
+      });
     } else {
       reject('//request is empty.');
     }
   });
-  handler.then(message => respond(message)).catch(error => respond(error));
+  handler.then((message) => respond(message)).catch((error) => respond(error));
   return true;
-
 });

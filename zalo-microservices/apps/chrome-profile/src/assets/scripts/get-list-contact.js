@@ -1,4 +1,12 @@
 (async () => {
+  document.body.style.zoom = '0.25';
+  // kiểm tra có đang ở màn hình danh bạ hay không
+  const elMenuActive = document.querySelector('.selected[data-translate-title="STR_TAB_CONTACT"]');
+  if (!elMenuActive) {
+    // chuyển sang tab danh bạ và đợi zl render
+     document.querySelector('[data-translate-title="STR_TAB_CONTACT"]').click();
+     await new Promise(resolve => setTimeout(resolve, 1000));
+  }
   // Mảng lưu trữ các đối tượng avatar đã thu thập để tránh trùng lặp
   let collectedContacts = new Set();
 
@@ -64,8 +72,12 @@
 
     return allContactsData;
   }
-
   // Gọi hàm và log kết quả
   const allContacts = await scrollAndCollect();
+
   console.warn('Tất cả liên hệ đã thu thập:', allContacts);
+  // chuyển về trang message
+  document.querySelector('[data-translate-title="STR_TAB_MESSAGE"]').click();
+  document.body.style.zoom = '1';
+  return allContacts;
 })();

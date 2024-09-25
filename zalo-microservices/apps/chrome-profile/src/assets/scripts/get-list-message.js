@@ -1,4 +1,11 @@
 (async () => {
+  document.body.style.zoom = '0.25';
+  // kiểm tra có đang đứng ở màn hình danh sách tin nhắ hay không
+  const elMenuActive = document.querySelector('.selected[data-translate-title="STR_TAB_MESSAGE"]');
+  if (!elMenuActive) {
+     document.querySelector('[data-translate-title="STR_TAB_MESSAGE"]').click();
+     await new Promise(resolve => setTimeout(resolve, 1000));
+  }
   // Mảng lưu trữ các đối tượng avatar đã thu thập
   let collectedAvatars = new Set();
 
@@ -69,7 +76,12 @@
   }
 
   // Gọi hàm và log kết quả
+  const scrollContainer = document.querySelector('.virtualized-scroll > div');
+  scrollContainer.scrollTop = 0; // đưa thanh scroll lên top
   const allData = await scrollAndCollect();
+  // scroll ve top
+  scrollContainer.scrollTop = 0;
   console.warn('Tất cả dữ liệu đã thu thập:', allData);
+    document.body.style.zoom = '1';
   return allData;
 })();

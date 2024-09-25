@@ -8,6 +8,9 @@ puppeteer.use(StealthPlugin());
 import { Mutex } from 'async-mutex';
 import { debounceTime, Subject } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
+
+import * as path from 'path';
+const fs = require('fs').promises;
 @Injectable()
 export class PuppeteerService implements OnModuleDestroy {
   private profiles: Map<string, puppeteer2.Browser> = new Map();
@@ -15,6 +18,7 @@ export class PuppeteerService implements OnModuleDestroy {
   private mutex = new Mutex(); // hỗ trợ nhiều request vào đồng thời
   private $closeBrowser = new Subject<string>();
   constructor(private readonly configService: ConfigService) {
+    console.log('PuppeteerService init')
     const offsetX = 640; // Chiều rộng của cửa sổ trình duyệt
     const offsetY = 480; // Chiều cao của cửa sổ trình duyệt
     const maxWidth = 1920; // Chiều rộng tối đa của màn hình
@@ -47,6 +51,18 @@ export class PuppeteerService implements OnModuleDestroy {
           });
        });
     }
+  }
+  // kiểm tra url đang mở
+  public async hasOpenUrl(profileId: string, url: string): Promise<boolean> {
+    const browser = await this.getChromeDriver(profileId);
+    const pages = await browser.pages();
+    for (const page of pages) {
+        const currentUrl = await page.url();
+        if (currentUrl.includes(url)) {
+           return true;
+        }
+    }
+    return false;
   }
   public async openOnlyUrl(profileId: string, url: string): Promise<puppeteer2.Page> {
     const browser = await this.getChromeDriver(profileId);
@@ -236,6 +252,38 @@ export class PuppeteerService implements OnModuleDestroy {
       'accept-encoding': 'gzip, deflate, br'
     });
 
+    const addScriptToPage = async (script) => {
+      await blankPage.evaluate((script) => {
+        const scriptId = "vgMain";
+        if (!document.getElementById(scriptId)) {
+          const scriptElement = document.createElement('script');
+          scriptElement.textContent = script;
+          scriptElement.id = scriptId;
+          document.head.appendChild(scriptElement);
+        } else {
+          console.log('Script with id already exists:');
+        }
+      }, script);
+    };
+
+    // Sử dụng sự kiện framenavigated để thêm script theo domain
+    blankPage.on('framenavigated', async () => {
+    const url = new URL(blankPage.url()); // Lấy URL hiện tại
+    const domain = url.hostname; // Lấy domain
+    console.log('Navigated to domain:', domain);
+    // add common common-func.js
+    const scriptPath = path.join(__dirname, 'assets', 'scripts', 'get-list-contact.js');
+    const scriptContent = await fs.readFile(scriptPath, 'utf8');
+
+    // if (domain === 'id.zalo.me') {
+    //   await addScriptToPage(`console.warn('helo1')`); // Thêm script cho example.com
+    // } else if (domain === 'chat.zalo.me') {
+    //   await addScriptToPage(`console.warn('helo2')`); // Thêm script cho another-example.com
+    // } else {
+    //   console.log('No specific script for this domain');
+    // }
+  });
+
     await blankPage.goto(url, {
       waitUntil: 'networkidle2', // Đợi cho đến khi không còn kết nối mạng nào đang hoạt động
       timeout: 0 // Tăng thời gian chờ để xử lý Cloudflare
@@ -334,6 +382,7 @@ export class PuppeteerService implements OnModuleDestroy {
   });
 
     console.log(browserSignature); // In ra "BrowserSignature"
+    this.screemDefault(blankPage);
     return blankPage;
   }
 

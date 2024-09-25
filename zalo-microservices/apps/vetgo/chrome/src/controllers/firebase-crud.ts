@@ -1,4 +1,4 @@
-import * as cloneDeep from 'lodash/cloneDeep';
+import  { cloneDeep } from 'lodash';
 import { EntityModel } from "../models";
 import { uuid } from "../utils/db-utils";
 export function firebaseSerialize<T>(object: T) {
