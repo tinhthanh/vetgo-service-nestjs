@@ -3,7 +3,6 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "start:api-gateway": "nx serve api-gateway",
     "start:chrome-profile": "nx serve chrome-profile --watch=false",
     "start:all": "concurrently \"npm run start:api-gateway\""
   },

@@ -13,7 +13,6 @@ import { JobScratchService } from "./job-scratch.service";
 // UUID có các dụng để check trạng thái của task đã làm xong chưa
 @Injectable()
 export class TaskService {
-  realm = 'vetgo-zl';
   tasks = new Subject<TaskModel>();
 
   private taskQueue: TaskModel[] = []; // Hàng đợi task
@@ -21,13 +20,14 @@ export class TaskService {
   private queueMutex = new Mutex(); // Sử dụng Mutex để đảm bảo đồng bộ
 
   constructor(private jobScratchService: JobScratchService ,private readonly configService: ConfigService) {
+    const realm = this.configService.get('REALM');
     this.processQueue(); // Khởi động quá trình xử lý hàng đợi
 
     const ws = new VgWsService();
     const url = this.configService.get<string>('WS');
     console.log(url);
     ws.connect(url);
-    ws.register(this.realm, async (task: TaskModel) => {
+    ws.register(realm, async (task: TaskModel) => {
 
       if(!task.actionType) {
         if(task['message']) {
@@ -68,8 +68,8 @@ export class TaskService {
         this.isProcessing = false;
         return this.processQueue(); // Tiếp tục xử lý task tiếp theo
       }
-
-      const destination = `${this.realm}/${task.phone}/${task.actionType}`;
+      const realm = this.configService.get('REALM');
+      const destination = `${realm}/${task.phone}/${task.actionType}`;
       // Xử lý task không bị hủy
       if (task.actionType === ActionType.LOGIN) {
         await this.jobScratchService.handleLoginTask(task,destination);

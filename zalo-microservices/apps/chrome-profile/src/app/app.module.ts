@@ -6,6 +6,7 @@ import { PuppeteerService } from './puppeteer.service';
 import { JobScratchService } from './job-scratch.service';
 import { TaskService } from './task.service';
 import { HttpModule } from '@nestjs/axios';
+import { PuppeteerController } from './puppeteer.controller';
 
 @Module({
   imports: [
@@ -16,9 +17,6 @@ import { HttpModule } from '@nestjs/axios';
           .default('development'),
         PORT: Joi.number(),
         HEADLESS: Joi.boolean().default(false),
-        AMQP_URL: Joi.string().required(),
-        QUEUE_NAME_PRODUCER: Joi.string().required(),
-        QUEUE_NAME_CONSUMER: Joi.string().required(),
         WS: Joi.string().required()
       }),
       isGlobal: true,
@@ -31,7 +29,7 @@ import { HttpModule } from '@nestjs/axios';
     }),
     HttpModule
   ],
-  controllers: [],
+  controllers: [PuppeteerController],
   providers: [PuppeteerService, JobScratchService, TaskService],
 })
 export class AppModule {}

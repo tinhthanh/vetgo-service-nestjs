@@ -84,7 +84,7 @@ export class PuppeteerService implements OnModuleDestroy {
       }
     }
     console.log('Khong tim thay tab -> mo moi' + url);
-    return this.openUrl(browser, url);
+    return this.openUrl(browser, url,profileId);
   }
   public async sendKey(
     profileId: string,
@@ -152,6 +152,8 @@ export class PuppeteerService implements OnModuleDestroy {
       // const pathToExtension = 'browser-plugin';
       const customOptions = [
         '--no-sandbox',
+        '--disable-web-security',
+        '--disable-features=IsolateOrigins,site-per-process',
         '--disable-dev-shm-usage',
         `--user-data-dir=${profilePath}`,
         '--remote-allow-origins=*',
@@ -184,9 +186,10 @@ export class PuppeteerService implements OnModuleDestroy {
   }
 
   // mở một tab url
-   async openUrl(
+  private async openUrl(
     browser: puppeteer2.Browser,
     url: string,
+    phone: string
   ): Promise<puppeteer2.Page> {
     const page1 = await browser.newPage();
     // interception
@@ -252,9 +255,8 @@ export class PuppeteerService implements OnModuleDestroy {
       'accept-encoding': 'gzip, deflate, br'
     });
 
-    const addScriptToPage = async (script) => {
-      await blankPage.evaluate((script) => {
-        const scriptId = "vgMain";
+    const addScriptToPage = async (script, scriptId) => {
+      await blankPage.evaluate((script, scriptId) => {
         if (!document.getElementById(scriptId)) {
           const scriptElement = document.createElement('script');
           scriptElement.textContent = script;
@@ -263,7 +265,7 @@ export class PuppeteerService implements OnModuleDestroy {
         } else {
           console.log('Script with id already exists:');
         }
-      }, script);
+      }, script,scriptId);
     };
 
     // Sử dụng sự kiện framenavigated để thêm script theo domain
@@ -272,9 +274,12 @@ export class PuppeteerService implements OnModuleDestroy {
     const domain = url.hostname; // Lấy domain
     console.log('Navigated to domain:', domain);
     // add common common-func.js
-    const scriptPath = path.join(__dirname, 'assets', 'scripts', 'get-list-contact.js');
+    const scriptPath = path.join(__dirname, 'assets', 'scripts', 'common-func.js');
     const scriptContent = await fs.readFile(scriptPath, 'utf8');
-
+    await blankPage.evaluate((phone) => {
+      sessionStorage.setItem('phone', phone);
+    }, phone);
+     await addScriptToPage(scriptContent, 'commonFuncJs');
     // if (domain === 'id.zalo.me') {
     //   await addScriptToPage(`console.warn('helo1')`); // Thêm script cho example.com
     // } else if (domain === 'chat.zalo.me') {
