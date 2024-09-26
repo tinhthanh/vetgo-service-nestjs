@@ -6,7 +6,6 @@ import { PuppeteerService } from './puppeteer.service';
 import { JobScratchService } from './job-scratch.service';
 import { TaskService } from './task.service';
 import { HttpModule } from '@nestjs/axios';
-import { PuppeteerController } from './puppeteer.controller';
 
 @Module({
   imports: [
@@ -29,7 +28,7 @@ import { PuppeteerController } from './puppeteer.controller';
     }),
     HttpModule
   ],
-  controllers: [PuppeteerController],
+  controllers: [],
   providers: [PuppeteerService, JobScratchService, TaskService],
 })
 export class AppModule {}

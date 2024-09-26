@@ -8,9 +8,12 @@ puppeteer.use(StealthPlugin());
 import { Mutex } from 'async-mutex';
 import { debounceTime, Subject } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
+import axios from 'axios';
 
 import * as path from 'path';
+import { ActionModel, PasteImageData, SendKeyData } from './action.dtb';
 const fs = require('fs').promises;
+import * as fs2 from 'fs';
 @Injectable()
 export class PuppeteerService implements OnModuleDestroy {
   private profiles: Map<string, puppeteer2.Browser> = new Map();
@@ -128,6 +131,83 @@ export class PuppeteerService implements OnModuleDestroy {
       }
     }
   }
+  public async simulateDragAndDrop(
+    profileId: string,
+    url: string,
+    selector: string,
+    pathImg: string
+  ) {
+    const browser = await this.getChromeDriver(profileId);
+    const pages = await browser.pages();
+    for (const page of pages) {
+      const currentUrl = await page.url();
+      if (currentUrl.includes(url)) {
+        await this.screemDefault(page);
+        await page.bringToFront();
+        const imageBuffer = await this.downloadImage(pathImg);
+        const [fileChooser] = await Promise.all([
+          page.waitForFileChooser(),
+          page.click('[data-translate-title="STR_SEND_PHOTO"]'), // some button that triggers file selection
+        ]);
+
+        const tempFilePath = path.join(__dirname, `${profileId}-temp-image.png`);
+        if (fs2.existsSync(tempFilePath)) {
+              fs2.unlinkSync(tempFilePath);
+            console.log('Deleted temporary file:', tempFilePath);
+         }
+        fs2.writeFileSync(tempFilePath, imageBuffer);
+
+        await fileChooser.accept([tempFilePath]);
+
+
+        return; // cách 2 kéo thả
+        const response = await fetch(pathImg);
+        const arrayBuffer = await response.arrayBuffer(); // Lấy dữ liệu dưới dạng ArrayBuffer
+        const base64Img = Buffer.from(arrayBuffer).toString('base64'); // Chuyển đổi thành base64
+
+
+        const data = await fetch(pathImg);
+        const blobFile = await data.blob();
+        console.log(blobFile);
+
+
+
+        // Bước 2: Sao chép hình ảnh vào clipboard
+        await page.evaluate(async (base64Img,selector) => {
+           // Chuyển đổi base64 thành Blob
+        const byteCharacters = atob(base64Img);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blobFile = new Blob([byteArray], { type: 'image/png' }); // Tạo Blob từ byte array
+
+        // Tạo đối tượng File từ Blob
+          const file = new File([blobFile], 'image.png', { type: 'image/png' });
+
+          // Mô phỏng sự kiện DragEvent và thêm file vào DataTransfer
+          const eventDrop = new DragEvent('drop', {
+            bubbles: true,
+            cancelable: true,
+            dataTransfer: new DataTransfer(),
+          });
+          eventDrop.dataTransfer.items.add(file);
+          // Thực hiện thao tác drop trên vùng chỉ định (dropSelector)
+          const dropZone = document.querySelector(selector);
+          if (dropZone) {
+            dropZone.dispatchEvent(eventDrop);
+            console.log('File dropped successfully!');
+          } else {
+            console.error('Drop zone not found!');
+          }
+        }, base64Img,selector);
+      } else {
+        console.log('dong tab' + page.url());
+        await page.close();
+      }
+    }
+  }
   // set screem
   private async screemDefault(page: puppeteer2.Page): Promise<void> {
     const width = 1280;
@@ -152,8 +232,6 @@ export class PuppeteerService implements OnModuleDestroy {
       // const pathToExtension = 'browser-plugin';
       const customOptions = [
         '--no-sandbox',
-        '--disable-web-security',
-        '--disable-features=IsolateOrigins,site-per-process',
         '--disable-dev-shm-usage',
         `--user-data-dir=${profilePath}`,
         '--remote-allow-origins=*',
@@ -279,6 +357,53 @@ export class PuppeteerService implements OnModuleDestroy {
     await blankPage.evaluate((phone) => {
       sessionStorage.setItem('phone', phone);
     }, phone);
+    // Kiểm tra xem window.sendActionType đã tồn tại chưa
+  const isFuncExposed = await blankPage.evaluate(() => {
+    return typeof window['sendActionType'] !== 'undefined';
+  });
+  if(!isFuncExposed) {
+    await blankPage.exposeFunction('sendActionType', async (data: ActionModel) => {
+      if (data?.actionType === 'SEND_KEY') {
+        console.log('Received message from page:', data);
+        // Trả về một giá trị sau khi xử lý xong
+        const dataSendKey = data.data  as SendKeyData;
+         await this.sendKey(
+          data.phone,
+          data.url,
+          dataSendKey.selector,
+          dataSendKey.value,
+          dataSendKey?.delay || 50,
+        );
+        if(dataSendKey.isEnter) {
+          await this.pressKey(
+            data.phone,
+            data.url,
+            dataSendKey.selector,
+            'Enter'
+          )
+        }
+        console.log('excute task done')
+      }
+      if (data?.actionType === 'PASTE_IMAGE') {
+        console.log('Received message from page:', data);
+        const dataInput = data.data  as PasteImageData;
+        await this.simulateDragAndDrop(
+          data.phone,
+          data.url,
+          dataInput.selector,
+          dataInput.url
+        );
+        console.log('excute task donee')
+      }
+      // thông báo về client đã làm xog task
+      await blankPage.evaluate(() => {
+        const responseEvent = new CustomEvent('RESPONSE_FROM_SERVER', {
+          detail: { status: 'DONE' }
+        });
+        document.querySelector('body').dispatchEvent(responseEvent);
+      });
+    });
+  }
      await addScriptToPage(scriptContent, 'commonFuncJs');
     // if (domain === 'id.zalo.me') {
     //   await addScriptToPage(`console.warn('helo1')`); // Thêm script cho example.com
@@ -390,5 +515,10 @@ export class PuppeteerService implements OnModuleDestroy {
     this.screemDefault(blankPage);
     return blankPage;
   }
+  async downloadImage(imageUrl: string): Promise<Buffer> {
+    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    return Buffer.from(response.data);
+  }
+
 
 }

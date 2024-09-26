@@ -171,68 +171,51 @@ var vetgoDB = {
 
   }
 }
+// FE sendEvent
+async function sendEvent(data) {
+  return new Promise((resolve) => {
+    // Định nghĩa hàm xử lý sự kiện
+    const eventHandler = function(event) {
+      console.warn('response from server', event.detail);
+
+      // Gọi resolve để trả về dữ liệu và xử lý xong
+      resolve(event.detail);
+
+      // Loại bỏ event listener sau khi nhận được phản hồi
+      document.querySelector('body').removeEventListener('RESPONSE_FROM_SERVER', eventHandler);
+    };
+
+    // Gắn sự kiện để lắng nghe phản hồi từ server
+    document.querySelector('body').addEventListener('RESPONSE_FROM_SERVER', eventHandler);
+
+    // Gửi dữ liệu tới server thông qua window.sendActionType
+    window.sendActionType(data).then(); // gửi event
+  });
+}
+
 var vetgoSe = {
-  baseUrl: 'http://localhost:9400/',
   profileId: () => sessionStorage.getItem('phone'),
-  openOnlyUrl: function ( currentUrl) {
-    const model = { profileId: this.profileId(), currentUrl: currentUrl };
-    return fetch(this.baseUrl + 'native/open-only-url', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(model),
-    })
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        return response.json();
+  sendKey: async function  (selector, value, isEnter, delay = 50) {
+    return new Promise((res) => {
+      value = value.replace(/\n/g, ' ');
+      const model = { phone: this.profileId() ,actionType: 'SEND_KEY', data: { selector: selector, value: value, isEnter: isEnter, delay: delay }, url: window.location.href, messageStatus: "NEW" };
+      console.warn('vetgoSe -> sendKey' , model);
+      sendEvent(model).then(data => {
+          console.log(data);
+          res(data);
       })
-      .then(data => {
-        console.log(data);
-        return data;
-      })
-      .catch(error => console.log("Lỗi openOnlyUrl: " + error));
+  }).catch(error => console.log("Lỗi sendKeyImage: " + error));
   },
-
-  sendKey: function (selector, text, delay = 50) {
-    const model = { profileId: this.profileId(), currentUrl: window.location.origin, selector: selector, text: text, delay: delay };
-    return fetch(this.baseUrl + 'native/send-key', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(model),
-    })
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        return response.json();
-      })
-      .then(data => {
-        console.log(data);
-        return data;
-      })
-      .catch(error => console.log("Lỗi sendKey: " + error));
-  },
-
-  keyPress: function ( selector, text) {
-    const model = { profileId: this.profileId(), currentUrl: window.location.origin, selector: selector, text: text };
-    return fetch(this.baseUrl + 'native/key-press', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(model),
-    })
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        return response.json();
-      })
-      .then(data => {
-        console.log(data);
-        return data;
-      })
-      .catch(error => console.log("Lỗi keyPress: " + error));
-  }
+  sendKeyImage: async function (selector, url) {
+    return new Promise((res) => {
+        const model = {phone: this.profileId(), actionType: 'PASTE_IMAGE', data: { selector: selector, url: url }, url: window.location.href, messageStatus: "NEW" };
+        console.warn('vetgoSe -> sendKeyImage' , model);
+        sendEvent(model).then(data => {
+            console.log(data);
+            res(data);
+        })
+    }).catch(error => console.log("Lỗi sendKeyImage: " + error));
+}
 };
 
 window.vetgo =  { db: vetgoDB, se: vetgoSe}

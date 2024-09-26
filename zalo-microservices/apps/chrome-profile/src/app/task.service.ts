@@ -86,6 +86,9 @@ export class TaskService {
      if(task.actionType === ActionType.OPEN_CHAT) {
         await this.jobScratchService.openMessage(task,destination);
     }
+    if(task.actionType === ActionType.SEND_MESSAGE) {
+      await this.jobScratchService.sendMessage(task,destination);
+    }
     } catch (error) {
       console.error('Error processing task:', error);
     } finally {

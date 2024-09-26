@@ -213,6 +213,51 @@ export class JobScratchService {
                console.log('Tài khoản bị đăng xuất');
             }
   }
+  async sendMessage(data: TaskModel, destination: string) {
+    const page = await this.puppeteerService.openOnlyUrl(data.phone, "https://chat.zalo.me");
+    console.log('Job sendMessage run');
+    await new Promise( (rs) => setTimeout(()=> rs(null), 3000 ));
+       const url = await page.url();
+        if(url.startsWith('https://chat.zalo.me')) {
+         // chuyền input
+         const scriptName = 'open-chat.js';
+         if(!data.data?.avt) {
+           return;
+         }
+         const inputParam = data.data;
+         await page.evaluate((scriptName,input) => {
+           sessionStorage.setItem(scriptName, JSON.stringify(input));
+         },scriptName, inputParam);
+         // end chuyền input
+
+           const scriptPath = path.join(__dirname, 'assets', 'scripts', scriptName);
+           const scriptContent = await fs.readFile(scriptPath, 'utf8');
+             // Thực thi mã JavaScript từ file script.js trên trang web
+             const isFound = await page.evaluate(scriptContent);
+              if(isFound) { // tìm thấy tiến hành cào data khung chát
+                 // TODO send messageee
+                 const scriptSendMessageName = "send-message.js";
+                 const scriptSendMessage = await fs.readFile(path.join(__dirname, 'assets', 'scripts', scriptSendMessageName), 'utf8');
+                 await page.evaluate((scriptSendMessageName,input) => {
+                  sessionStorage.setItem(scriptSendMessageName, JSON.stringify(input));
+                },scriptSendMessageName, inputParam);
+                 await page.evaluate(scriptSendMessage);
+                //  const scriptGetConversation = await fs.readFile(path.join(__dirname, 'assets', 'scripts', "conversation.js"), 'utf8');
+                //  // Thực thi mã JavaScript từ file script.js trên trang web
+                //  const listMess = await page.evaluate(scriptGetConversation);
+                //      if(listMess) {
+                //        this.sendProgress(listMess, destination);
+                //       }
+              } else {
+               // TODO nếu k thấy ở danh sách message đi luồng seach native
+               // xong chạy lại open-chat.js để tìm lại
+              }
+
+
+         } else {
+            console.log('Tài khoản bị đăng xuất');
+         }
+  }
   sendProgress<T>(data: T, destination: string) {
     this.httpService.post(
       'https://socketonly.moonpet.vn/api/notification/push',
