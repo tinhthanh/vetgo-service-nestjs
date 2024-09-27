@@ -6,6 +6,9 @@ import { PuppeteerService } from './puppeteer.service';
 import { JobScratchService } from './job-scratch.service';
 import { TaskService } from './task.service';
 import { HttpModule } from '@nestjs/axios';
+import { ContactService } from './db/services/contact.service';
+import { ListMessageService } from './db/services/list-message.service';
+import { ConversationService } from './db/services/conversation.service';
 
 @Module({
   imports: [
@@ -16,7 +19,8 @@ import { HttpModule } from '@nestjs/axios';
           .default('development'),
         PORT: Joi.number(),
         HEADLESS: Joi.boolean().default(false),
-        WS: Joi.string().required()
+        WS: Joi.string().required(),
+        URL_CURD: Joi.string().required()
       }),
       isGlobal: true,
       envFilePath: process.env.NODE_ENV === 'development' ? '.env.dev' : '.env',
@@ -29,6 +33,13 @@ import { HttpModule } from '@nestjs/axios';
     HttpModule
   ],
   controllers: [],
-  providers: [PuppeteerService, JobScratchService, TaskService],
+  providers: [
+    PuppeteerService,
+    JobScratchService,
+    TaskService,
+    ContactService,
+    ListMessageService,
+    ConversationService
+  ],
 })
 export class AppModule {}

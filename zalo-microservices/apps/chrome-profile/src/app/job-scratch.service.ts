@@ -5,9 +5,16 @@ import * as path from 'path';
 const fs = require('fs').promises;
 import { HttpService } from "@nestjs/axios";
 import { TaskModel } from "@vg/common";
+import { ContactService } from "./db/services/contact.service";
+import { ListMessageService } from "./db/services/list-message.service";
+import { ConversationService } from "./db/services/conversation.service";
 @Injectable()
 export class JobScratchService {
-  constructor(private readonly httpService: HttpService,private readonly puppeteerService: PuppeteerService) {}
+  constructor(
+    private readonly conversationService: ConversationService,
+    private readonly contactService: ContactService,
+    private readonly listMessageService: ListMessageService,
+    private readonly httpService: HttpService,private readonly puppeteerService: PuppeteerService) {}
 
   public async handleLoginTask(data: TaskModel, destination: string) {
     // const url = 'https://id.zalo.me';
@@ -142,7 +149,11 @@ export class JobScratchService {
   async getListMessage(data: TaskModel, destination: string) {
     const page = await this.puppeteerService.openOnlyUrl(data.phone, "https://chat.zalo.me");
     console.log('Job getListMessage run');
-    await new Promise( (rs) => setTimeout(()=> rs(null), 3000 ));
+    await new Promise( (rs) => setTimeout(()=> rs(null), 2000 ));
+     // return cache
+     const cache = await this.listMessageService.getAll(data.phone);
+     console.log('cache: ' , cache.length);
+     this.sendProgress(cache, destination);
        const url = await page.url();
         if(url.startsWith('https://chat.zalo.me')) {
            const scriptPath = path.join(__dirname, 'assets', 'scripts', 'get-list-message.js');
@@ -152,6 +163,9 @@ export class JobScratchService {
              console.warn('send to ', result);
              if(result) {
                this.sendProgress(result, destination);
+               this.listMessageService.saveAll(data.phone,result).then(()=> {
+                console.log('save list message done');
+              });
              }
          } else {
             console.log('Tài khoản bị đăng xuất');
@@ -160,7 +174,11 @@ export class JobScratchService {
  async getListContact(data: TaskModel, destination: string) {
     const page = await this.puppeteerService.openOnlyUrl(data.phone, "https://chat.zalo.me");
        console.log('Job getListContact run');
-       await new Promise( (rs) => setTimeout(()=> rs(null), 3000 ));
+       await new Promise( (rs) => setTimeout(()=> rs(null), 2000 ));
+        // return cache
+        const cache = await this.contactService.getAll(data.phone);
+        console.log('cache: ' , cache.length);
+        this.sendProgress(cache, destination);
           const url = await page.url();
            if(url.startsWith('https://chat.zalo.me')) {
               const scriptPath = path.join(__dirname, 'assets', 'scripts', 'get-list-contact.js');
@@ -170,6 +188,9 @@ export class JobScratchService {
                 console.warn('send to ', result);
                 if(result) {
                   this.sendProgress(result, destination);
+                  this.contactService.saveAll(data.phone,result).then(()=> {
+                    console.log('save list contact done');
+                  });
                 }
             } else {
                console.log('Tài khoản bị đăng xuất');
@@ -177,8 +198,8 @@ export class JobScratchService {
   }
   async openMessage(data: TaskModel, destination: string) {
     const page = await this.puppeteerService.openOnlyUrl(data.phone, "https://chat.zalo.me");
-       console.log('Job getListContact run');
-       await new Promise( (rs) => setTimeout(()=> rs(null), 3000 ));
+       console.log('Job openMessage run');
+       await new Promise( (rs) => setTimeout(()=> rs(null), 2000 ));
           const url = await page.url();
            if(url.startsWith('https://chat.zalo.me')) {
             // chuyền input
@@ -187,6 +208,10 @@ export class JobScratchService {
               return;
             }
             const inputParam = {avt: data.data?.avt};
+            const keyCache = `${data.phone}-${inputParam.avt.split('/').pop()}`;
+            console.warn(keyCache);
+            const cache = await this.conversationService.getAll(keyCache);
+            this.sendProgress(cache, destination);
             await page.evaluate((scriptName,input) => {
               sessionStorage.setItem(scriptName, JSON.stringify(input));
             },scriptName, inputParam);
@@ -202,6 +227,7 @@ export class JobScratchService {
                     const listMess = await page.evaluate(scriptGetConversation);
                         if(listMess) {
                           this.sendProgress(listMess, destination);
+                          this.conversationService.saveAll(keyCache,listMess);
                          }
                  } else {
                   // TODO nếu k thấy ở danh sách message đi luồng seach native
