@@ -11,7 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 
 import * as path from 'path';
-import { ActionModel, PasteImageData, SendKeyData } from './action.dtb';
+import { ActionModel, PasteImageData, RequestForward, SendKeyData } from './action.dtb';
 const fs = require('fs').promises;
 import * as fs2 from 'fs';
 @Injectable()
@@ -354,9 +354,11 @@ export class PuppeteerService implements OnModuleDestroy {
     // add common common-func.js
     const scriptPath = path.join(__dirname, 'assets', 'scripts', 'common-func.js');
     const scriptContent = await fs.readFile(scriptPath, 'utf8');
-    await blankPage.evaluate((phone) => {
+    const realm = this.configService.get('REALM');
+    await blankPage.evaluate((phone,realm) => {
       sessionStorage.setItem('phone', phone);
-    }, phone);
+      sessionStorage.setItem('realm' ,realm)
+    }, phone,realm);
     // Kiểm tra xem window.sendActionType đã tồn tại chưa
   const isFuncExposed = await blankPage.evaluate(() => {
     return typeof window['sendActionType'] !== 'undefined';
@@ -395,7 +397,13 @@ export class PuppeteerService implements OnModuleDestroy {
         );
         console.log('excute task donee')
       }
-      // thông báo về client đã làm xog task
+      if(data.actionType === 'FORWARD') { // forward call request
+        const dataInput = data.data as RequestForward;
+        console.log(dataInput)
+        const rs = await fetch(dataInput.url , dataInput?.init || {} );
+        return rs.json();
+      }
+      // thông báo process về client đã làm xog task
       await blankPage.evaluate(() => {
         const responseEvent = new CustomEvent('RESPONSE_FROM_SERVER', {
           detail: { status: 'DONE' }

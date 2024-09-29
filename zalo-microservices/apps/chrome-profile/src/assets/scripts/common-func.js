@@ -50,6 +50,7 @@ window.vetgoConstant = {
   // Param key sesstionStorege
   PARAM_KEY_SHEET_ID_CLIENT: "sheetID",
   PARAM_KEY_PHONE: "phone",
+  PARAM_KEY_REALM: "realm",
   PARAM_KEY_SHEET_SERVER: "sheetServer",
   // Giợi hạn số lần sử dụng chức năng
   TRIAL_ADD_FRIEND: 10,
@@ -354,6 +355,19 @@ var vetgoSe = {
       });
     }).catch((error) => console.log('Lỗi sendKeyImage: ' + error));
   },
+  fetch(url, init = { method: 'POST', body: {} , headers: {} }) {
+    return new Promise((res) => {
+      const model = {
+        phone: this.profileId(),
+        actionType: 'FORWARD',
+        data: { url: url, init },
+        url: window.location.href,
+        messageStatus: 'NEW',
+      };
+      console.warn('vetgoSe -> fetch', model);
+      window.sendActionType(model).then((rs) => res(rs));
+    }).catch((error) => console.log('Lỗi fetch: ' + error));
+  }
 };
 
 /*------------------------------------------------------------------------------------------------------------------------------------------------*/
@@ -371,6 +385,10 @@ async function selectText(selector) {
 // get phone for execute task
 function getPhone() {
   return sessionStorage.getItem(vetgoConstant.PARAM_KEY_PHONE);
+}
+// get realm
+function getRealm() {
+  return sessionStorage.getItem(vetgoConstant.PARAM_KEY_REALM);
 }
 function getCurrentDateTime() {
   var currentDate = new Date();
@@ -441,6 +459,162 @@ function awaitLoadSuccessPage(selector) {
       }, intervalTime);
   })
 }
+/*------------------------------------------------------------------------------------------------------------------------------------------------*/
+// for googleSheet
+var vetgoSheet = {
+  table: 'draft',
+  doc: `
+// set table work on
+  vetgo.sheet.table = 'users';
+  // add item
+  vetgo.sheet.add({id: 1 , userName: "Thanh" , pass:"123"}).then();
+  vetgo.sheet.update({id: 1 , userName: "Thanh2" , pass:"123"}).then();
+  vetgo.sheet.getById(1).then( (item) => console.log(item))
+  vetgo.sheet.getAll(1).then( (item) => console.log(item))
+  vetgo.sheet.deleteById(1).then( (item) => console.log(item))
+  // remove table users
+  vetgo.sheet.clearData().then()
+   // use with await/ async
+       setTimeout(async () => {
+          const item = await vetgo.sheet.getAll();
+          console.log(item);
+       }, 0)
+` ,
+  add: (data, table) => {
+      const obj = {
+          actionType: 'POST',
+          table: table || vetgoSheet.table,
+          data,
+          csrfToken: vetgoConstant.VETGO_TOKEN,
+      };
+      return vetgoSheet.post(obj)
+          .then(response => response.data);
+  },
+  addAll: (data, table) => {
+      const obj = {
+          actionType: 'addAll',
+          table: table || vetgoSheet.table,
+          data,
+          csrfToken: vetgoConstant.VETGO_TOKEN,
+      };
+      return vetgoSheet.post(obj)
+          .then(response => response);
+  },
+  getAll: (table) => {
+      const obj = {
+          actionType: 'GET',
+          table: table || vetgoSheet.table,
+          csrfToken: vetgoConstant.VETGO_TOKEN,
+      };
+      return vetgoSheet.post(obj)
+          .then(response => response);
+  },
+  update: (data, table) => {
+      const obj = {
+          actionType: 'POST',
+          table: table || vetgoSheet.table,
+          data,
+          csrfToken: vetgoConstant.VETGO_TOKEN,
+      };
+      return vetgoSheet.post(obj)
+          .then(response => response.data);
+  },
+  getById: (id, table) => {
+      const obj = {
+          actionType: 'getById',
+          table: table || vetgoSheet.table,
+          id,
+          csrfToken: vetgoConstant.VETGO_TOKEN,
+      };
+      return vetgoSheet.post(obj);
+  },
+  uploadImg: (base64, name, type) => {
+      const obj = {
+          actionType: 'UPLOAD',
+          base64,
+          type,
+          name,
+          csrfToken: vetgoConstant.VETGO_TOKEN,
+      };
+      return vetgoSheet.post(obj)
+          .then(response => response.data);
+  },
+  clearData: (table) => {
+      const obj = {
+          actionType: 'CLEAR',
+          table: table || vetgoSheet.table,
+          csrfToken: vetgoConstant.VETGO_TOKEN,
+      };
+      return vetgoSheet.post(obj)
+          .then(response => response);
+  },
+  deleteById: (id, table) => {
+      const obj = {
+          actionType: 'DELETE',
+          table: table || vetgoSheet.table,
+          id,
+          csrfToken: vetgoConstant.VETGO_TOKEN,
+      };
+      return vetgoSheet.post(obj)
+          .then(response => response);
+  },
+
+    post: async (data) => {
+          const baseUrl = `https://api.phanmemvet.vn/public/api/dynamic/table`;
+          return new Promise(async (resolve, reject) => {
+            if(data.actionType == 'getById'){
+              const url = `${baseUrl}/${data.table}/${data.id}`;
+                await vetgo.se.fetch(url, {
+                  method: 'GET',
+                  headers: {
+                      'realm': getRealm()
+                  }
+                  }).then(response => {
+                     if(response.error && response.status === 404) {
+                        resolve(null);
+                     } else {
+                        resolve(response);
+                     }
+                });
+            } else if(data.actionType == 'POST') {
+              const url = `${baseUrl}/${data.table}/insert`;
+                await vetgo.se.fetch(url, {
+                  method: 'POST',
+                  headers: {
+                      'realm': getRealm(),
+                      'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(data.data),
+                  }).then(response => {
+                      console.warn(response);
+                      console.warn('save or update' ,data );
+                     resolve(response);
+                });
+            } else {
+                reject('hien thuc cac action o day');
+            }
+          });
+    },
+  getDeviceRemote: () => {
+      const obj = {
+          actionType: 'getById',
+          table: vetgoConstant.TBL_DEVICE_REMOTE,
+          id: getPhone(),
+          csrfToken: vetgoConstant.VETGO_TOKEN,
+      };
+      return vetgoSheet.post(obj).then(response => response.data);
+  },
+  getPhoneLogin: () => {
+      const obj = {
+          actionType: 'getById',
+          table: vetgoConstant.TBL_DEVICE_REMOTE,
+          id: getPhone(),
+          csrfToken: vetgoConstant.VETGO_TOKEN,
+      };
+      return vetgoSheet.post(obj)
+          .then(response => response.data.phoneLogin);
+  }
+}
 
 /*------------------------------------------------------------------------------------------------------------------------------------------------*/
 // for zalo
@@ -470,7 +644,7 @@ vetgo.zalo.sendMessage('#input','hello zalo')
       return result === "DONE";
 
   },
-  searchPhone: async (phone) => {
+  searchPhone: async (phone) => { // OKIE
       const enterEvent = new KeyboardEvent('keydown', {
           bubbles: true,
           cancelable: false,
@@ -496,7 +670,7 @@ vetgo.zalo.sendMessage('#input','hello zalo')
           if (idDiv) {
               const convIdValue = idDiv.replace("friend-item-", "");
               const tableMapPhone = vetgoConstant.TBL_MAP_PHONE.format(getPhone());
-              let entity = await vetgo.sheet.getById(convIdValue, tableMapPhone); // TODO convert
+              let entity = await vetgo.sheet.getById(convIdValue, tableMapPhone);
               if (entity == null) {
                   entity = {
                       id: convIdValue,
@@ -508,7 +682,7 @@ vetgo.zalo.sendMessage('#input','hello zalo')
                   entity.phone = phone;
               }
 
-              await vetgo.sheet.add(entity, tableMapPhone); // TODO convert
+              await vetgo.sheet.add(entity, tableMapPhone);
           }
           await sleep(1000);
           textSendMessage.dispatchEvent(enterEvent);
@@ -553,7 +727,7 @@ window.vetgo = {
    ...(window.vetgo || {}),
     db: vetgoDB,
     se: vetgoSe,
-    // sheet: vetgoSheet,
+    sheet: vetgoSheet,
     // sheetServer: vetgoSheetSever,
     zalo: vetgoZalo,
     // api: vetgoApi,

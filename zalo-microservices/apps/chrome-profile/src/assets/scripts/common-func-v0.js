@@ -501,7 +501,7 @@ var vetgoSheet = {
       return vetgoSheet.post(obj)
           .then(response => response);
   },
-  post: async (data, maxRetries = 5) => {
+  post: async (data) => {
       const urlApiSheet = vetgoConstant.URL_SCRIPT_GOOGLE.format(getSheetIdClient());
       for (let retry = 0; retry < maxRetries; retry++) {
           try {
@@ -544,7 +544,7 @@ var vetgoSheet = {
 }
 /*------------------------------------------------------------------------------------------------------------------------------------------------*/
 // for zalo
-var vetgoZalo = {
+// var vetgoZalo = {
 //   doc: `
 // // ex: searchPhone tìm số điên thoại zalo
 // vetgo.zalo.searchPhone('09000000')
@@ -570,82 +570,82 @@ var vetgoZalo = {
   //     return result === "DONE";
 
   // },
-  searchPhone: async (phone) => {
-      const enterEvent = new KeyboardEvent('keydown', {
-          bubbles: true,
-          cancelable: false,
-          key: "ENTER",
-          code: "ENTER",
-          keyCode: 13,
-          ctrlKey: false
-      });
-      const idSelector = "#contact-search-input";
-      let textSendMessage = await vetgo.se.waitForElement(idSelector);
-      if (textSendMessage == null) return vetgoConstant.SEARCH_PHONE_RESULT_FAILED;
-      // thực hiện search
-      await selectText(textSendMessage);
-      await vetgoSe.sendKey(idSelector, phone, "false");
-      // kiểm tra kết quả search
-      const arraySelectorSearch = ['#global_search_list > div > div:nth-child(2) div.gridv2.conv-item.conv-rel', '[data-translate-inner="STR_LIMIT_SEARCH_NUM_PHONE"]',
-          '[data-translate-inner="STR_UNVALID_SEARCH_NUM_PHONE"]', '[data-translate-inner="STR_NOT_FOUND"]', '[data-translate-inner="STR_NOT_VALID_PHONE_NUMBER"]'];
-      const result = await vetgo.se.waitForMultiElement(arraySelectorSearch);
-      console.log(result);
-      const idDiv = result.getAttribute("id");
-      // Nếu search ok
-      if (idDiv && idDiv.includes("friend-item-")) {
-          if (idDiv) {
-              const convIdValue = idDiv.replace("friend-item-", "");
-              const tableMapPhone = vetgoConstant.TBL_MAP_PHONE.format(getPhone());
-              let entity = await vetgo.sheet.getById(convIdValue, tableMapPhone);
-              if (entity == null) {
-                  entity = {
-                      id: convIdValue,
-                      phone: phone,
-                      profile: null,
-                      chatMessage: null
-                  }
-              } else {
-                  entity.phone = phone;
-              }
+  // searchPhone: async (phone) => {
+  //     const enterEvent = new KeyboardEvent('keydown', {
+  //         bubbles: true,
+  //         cancelable: false,
+  //         key: "ENTER",
+  //         code: "ENTER",
+  //         keyCode: 13,
+  //         ctrlKey: false
+  //     });
+  //     const idSelector = "#contact-search-input";
+  //     let textSendMessage = await vetgo.se.waitForElement(idSelector);
+  //     if (textSendMessage == null) return vetgoConstant.SEARCH_PHONE_RESULT_FAILED;
+  //     // thực hiện search
+  //     await selectText(textSendMessage);
+  //     await vetgoSe.sendKey(idSelector, phone, "false");
+  //     // kiểm tra kết quả search
+  //     const arraySelectorSearch = ['#global_search_list > div > div:nth-child(2) div.gridv2.conv-item.conv-rel', '[data-translate-inner="STR_LIMIT_SEARCH_NUM_PHONE"]',
+  //         '[data-translate-inner="STR_UNVALID_SEARCH_NUM_PHONE"]', '[data-translate-inner="STR_NOT_FOUND"]', '[data-translate-inner="STR_NOT_VALID_PHONE_NUMBER"]'];
+  //     const result = await vetgo.se.waitForMultiElement(arraySelectorSearch);
+  //     console.log(result);
+  //     const idDiv = result.getAttribute("id");
+  //     // Nếu search ok
+  //     if (idDiv && idDiv.includes("friend-item-")) {
+  //         if (idDiv) {
+  //             const convIdValue = idDiv.replace("friend-item-", "");
+  //             const tableMapPhone = vetgoConstant.TBL_MAP_PHONE.format(getPhone());
+  //             let entity = await vetgo.sheet.getById(convIdValue, tableMapPhone);
+  //             if (entity == null) {
+  //                 entity = {
+  //                     id: convIdValue,
+  //                     phone: phone,
+  //                     profile: null,
+  //                     chatMessage: null
+  //                 }
+  //             } else {
+  //                 entity.phone = phone;
+  //             }
 
-              await vetgo.sheet.add(entity, tableMapPhone);
-          }
-          await sleep(1000);
-          textSendMessage.dispatchEvent(enterEvent);
-          return vetgoConstant.SEARCH_PHONE_RESULT_OK;
-      } else {
-          const typeSearch = result.getAttribute("data-translate-inner");
-          if (typeSearch == "STR_LIMIT_SEARCH_NUM_PHONE") return vetgoConstant.SEARCH_PHONE_RESULT_LIMIT;
-          if (typeSearch == "STR_UNVALID_SEARCH_NUM_PHONE" || typeSearch == "STR_NOT_VALID_PHONE_NUMBER") return vetgoConstant.SEARCH_PHONE_RESULT_UNVALID;
-          if (typeSearch == "STR_NOT_FOUND") return vetgoConstant.SEARCH_PHONE_RESULT_NOT_FOUND;
-      }
-      return vetgoConstant.SEARCH_PHONE_RESULT_FAILED;
-  },
-  searchName: async (name, avatarLink) => {
-      const dbClickEvent = new MouseEvent('dblclick', {
-          bubbles: true,
-          cancelable: true,
-          view: window
-      });
-      const idSelector = "#contact-search-input";
-      let textSendMessage = await vetgo.se.waitForElement(idSelector);
-      if (textSendMessage == null) return vetgoConstant.SEARCH_PHONE_RESULT_FAILED;
-      // thực hiện search
-      await selectText(textSendMessage);
-      await vetgoSe.sendKey(idSelector, name, "false");
-      await sleep(1000);
-      // kiểm tra kết quả search
-      const searchList = [...document.querySelectorAll('div.gridv2.conv-item.conv-rel')];
-      if (searchList.length == 0) return null;
-      const elementResult = searchList.filter(result => result.querySelector("img").getAttribute("src") == avatarLink)[0];
-      if (elementResult == null || undefined) {
-          return null;
-      } else {
-          elementResult.dispatchEvent(dbClickEvent);
-      }
-      return elementResult;
-  }
-}
+  //             await vetgo.sheet.add(entity, tableMapPhone);
+  //         }
+  //         await sleep(1000);
+  //         textSendMessage.dispatchEvent(enterEvent);
+  //         return vetgoConstant.SEARCH_PHONE_RESULT_OK;
+  //     } else {
+  //         const typeSearch = result.getAttribute("data-translate-inner");
+  //         if (typeSearch == "STR_LIMIT_SEARCH_NUM_PHONE") return vetgoConstant.SEARCH_PHONE_RESULT_LIMIT;
+  //         if (typeSearch == "STR_UNVALID_SEARCH_NUM_PHONE" || typeSearch == "STR_NOT_VALID_PHONE_NUMBER") return vetgoConstant.SEARCH_PHONE_RESULT_UNVALID;
+  //         if (typeSearch == "STR_NOT_FOUND") return vetgoConstant.SEARCH_PHONE_RESULT_NOT_FOUND;
+  //     }
+  //     return vetgoConstant.SEARCH_PHONE_RESULT_FAILED;
+  // },
+  // searchName: async (name, avatarLink) => {
+  //     const dbClickEvent = new MouseEvent('dblclick', {
+  //         bubbles: true,
+  //         cancelable: true,
+  //         view: window
+  //     });
+  //     const idSelector = "#contact-search-input";
+  //     let textSendMessage = await vetgo.se.waitForElement(idSelector);
+  //     if (textSendMessage == null) return vetgoConstant.SEARCH_PHONE_RESULT_FAILED;
+  //     // thực hiện search
+  //     await selectText(textSendMessage);
+  //     await vetgoSe.sendKey(idSelector, name, "false");
+  //     await sleep(1000);
+  //     // kiểm tra kết quả search
+  //     const searchList = [...document.querySelectorAll('div.gridv2.conv-item.conv-rel')];
+  //     if (searchList.length == 0) return null;
+  //     const elementResult = searchList.filter(result => result.querySelector("img").getAttribute("src") == avatarLink)[0];
+  //     if (elementResult == null || undefined) {
+  //         return null;
+  //     } else {
+  //         elementResult.dispatchEvent(dbClickEvent);
+  //     }
+  //     return elementResult;
+  // }
+// }
 /*------------------------------------------------------------------------------------------------------------------------------------------------*/
 // for VnPay
 var vetgoVnPay = {
