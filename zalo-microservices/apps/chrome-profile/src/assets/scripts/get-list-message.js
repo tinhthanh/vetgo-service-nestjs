@@ -22,17 +22,38 @@
           if (elTime) {
             time = elTime.innerText;
           }
-          const avt = el.querySelector('.zavatar-single img').getAttribute('src');
+          const elAvt = el.querySelector('.zavatar-single img');
+          // TODO trường hợp user chưa cập nhật avt
+           if(!elAvt) {
+            return;
+           }
+          const avt = elAvt.getAttribute('src');
 
           // Kiểm tra nếu avatar chưa được thu thập, thì thêm vào items và collectedAvatars
           if (!collectedAvatars.has(avt)) {
-            items.push({ name, msg, time, avt });
+            // kiểm tra có tắt thông báo không
+           const mute = el.querySelector('.conv__mute') ? true : false;
+            // lay so luong tin nhan den
+            let counter = '';
+            const elCounter =  el.querySelector('.--counter > i[class^="fa fa-"]');
+            if(elCounter) {
+              try {
+                counter = elCounter.classList[1].match(/fa-(\d+|\d+\+)/)[1] || '';
+                if(counter) {
+                  counter = parseInt(counter, 10);
+                }
+              } catch (e) { }
+            }
+            // kiem tra nut gim
+             const pinned = el.classList.contains('pinned');
+
+            items.push({ name, msg, time, avt, pinned, counter, mute });
             collectedAvatars.add(avt); // Lưu lại avatar để tránh trùng lặp
           }
         }
       });
     } catch (e) {
-      console.log(e);
+      console.warn(e);
     }
     return items;
   }

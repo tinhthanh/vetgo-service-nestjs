@@ -6,7 +6,7 @@ const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
 import { Mutex } from 'async-mutex';
-import { debounceTime, Subject } from 'rxjs';
+import { debounceTime, interval, Subject, throttleTime } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 
@@ -14,13 +14,19 @@ import * as path from 'path';
 import { ActionModel, PasteImageData, RequestForward, SendKeyData } from './action.dtb';
 const fs = require('fs').promises;
 import * as fs2 from 'fs';
+import { v4 as uuidv4 } from 'uuid';
+import { InternalTaskService } from './db/services/internal-task.service';
+import { ActionType, TaskModel } from './task.model';
 @Injectable()
 export class PuppeteerService implements OnModuleDestroy {
   private profiles: Map<string, puppeteer2.Browser> = new Map();
   private browserPositions: Array<{ x: number, y: number }> = [];
   private mutex = new Mutex(); // hỗ trợ nhiều request vào đồng thời
   private $closeBrowser = new Subject<string>();
-  constructor(private readonly configService: ConfigService) {
+  private $trigerGetContact = new Subject<TaskModel>();
+  constructor(
+    private readonly internalTaskService: InternalTaskService,
+    private readonly configService: ConfigService) {
     console.log('PuppeteerService init')
     const offsetX = 640; // Chiều rộng của cửa sổ trình duyệt
     const offsetY = 480; // Chiều cao của cửa sổ trình duyệt
@@ -32,10 +38,31 @@ export class PuppeteerService implements OnModuleDestroy {
         this.browserPositions.push({ x, y });
       }
     }
-    // 1p k ai dung thi tat trinh duyet
-    // this.$closeBrowser.pipe(debounceTime(1*60*1000)).subscribe( () => {
-    //    this.closeAllBrowsers();
-    // });
+    // 5p k ai dung thi tat trinh duyet
+    this.$closeBrowser.pipe(debounceTime(5*60*1000)).subscribe( () => {
+      //  this.closeAllBrowsers();
+
+    });
+    // 6p realad 1 lần
+    interval(116*60*1000).subscribe(()=>{
+      for( let [ key  ] of this.profiles) {
+        const task: TaskModel = {
+          id: uuidv4(),
+          actionType: ActionType.RELOAD,
+          data: {}, // data process gửi về cho client
+          priority: 10,
+          phone: key
+        };
+        this.internalTaskService.pushTask(task);
+      }
+    });
+    // có task thì làm và đơi sau 30s
+    this.$trigerGetContact.pipe(
+        throttleTime(30000)
+    ).subscribe( task => {
+      console.warn('có task cào mới các tin nhắn mới');
+      this.internalTaskService.pushTask(task);
+    })
   }
   onModuleDestroy() {
     this.closeAllBrowsers();
@@ -355,10 +382,12 @@ export class PuppeteerService implements OnModuleDestroy {
     const scriptPath = path.join(__dirname, 'assets', 'scripts', 'common-func.js');
     const scriptContent = await fs.readFile(scriptPath, 'utf8');
     const realm = this.configService.get('REALM');
-    await blankPage.evaluate((phone,realm) => {
+    const urlCurd = this.configService.get('URL_CURD');
+    await blankPage.evaluate((phone,realm, urlCurd) => {
       sessionStorage.setItem('phone', phone);
-      sessionStorage.setItem('realm' ,realm)
-    }, phone,realm);
+      sessionStorage.setItem('realm' ,realm);
+      sessionStorage.setItem('URL_CURD',urlCurd);
+    }, phone,realm, urlCurd);
     // Kiểm tra xem window.sendActionType đã tồn tại chưa
   const isFuncExposed = await blankPage.evaluate(() => {
     return typeof window['sendActionType'] !== 'undefined';
@@ -426,6 +455,30 @@ export class PuppeteerService implements OnModuleDestroy {
       waitUntil: 'networkidle2', // Đợi cho đến khi không còn kết nối mạng nào đang hoạt động
       timeout: 0 // Tăng thời gian chờ để xử lý Cloudflare
     });
+
+  // Lắng nghe có tin nhắn mới hoặc nhắn tin với một đó
+ await blankPage.on('response', async (response) => {
+    const request = response.request();
+    if(request.method() !== 'GET' ) {
+      console.log(request.url());
+    }
+    if (request.url().includes('/api/message/')) {  // URL API nhận tin nhắn
+      const data = await response.json();
+
+      const task: TaskModel = {
+        id: uuidv4()  ,
+        actionType: ActionType.LIST_MESSAGE,
+        data: {}, // data process gửi về cho client
+        priority: 10,
+        phone
+      }
+      this.$trigerGetContact.next(task);
+      // TODO bâm data
+      console.log('Tin nhắn mới từ API:');
+      // TODO push task đi cào lại tin nhắn
+    }
+  });
+
   // Inject mã JavaScript để tạo "BrowserSignature"
   const browserSignature = await blankPage.evaluate(() => {
     // Mã "BrowserSignature" được inject vào trang

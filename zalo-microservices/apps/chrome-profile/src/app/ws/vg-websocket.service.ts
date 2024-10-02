@@ -18,9 +18,15 @@ export class VgWsService {
       webSocketFactory: () => new SockJS(url),
       debug: (str) => console.log(new Date(), str),
 
-      reconnectDelay: 5000,
-      heartbeatIncoming: 4000,
-      heartbeatOutgoing: 4000,
+      reconnectDelay: 200,
+      heartbeatIncoming: 1000,
+      heartbeatOutgoing: 20000,
+      logRawCommunication: true,
+      beforeConnect: async (client: RxStomp) => {
+        console.log('Preparing to connect...');
+        // Ví dụ: Lấy token từ dịch vụ khác
+      }
+      // Đảm bảo client liên tục thử lại
     };
     this.rxStomp = new RxStomp();
     this.rxStomp.configure(stompConfig);

@@ -1,16 +1,12 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { ActionType, TaskModel } from "@vg/common";
-import { VgWsService }  from "@vg/ws";
-import { Subject } from "rxjs";
+import { distinctUntilChanged, interval, Subject } from "rxjs";
 import { Mutex } from 'async-mutex';
 import { JobScratchService } from "./job-scratch.service";
-// để đảm bảo tính sẵn sàng cần mở 2 kết nối socket
-// thêm cơ chế 5p tắt 1 con mở lại luôn phiên 2 con
-// lắng nghe socket theo destination là sdt /0981773084
-// giao task thì cứ push vào /0981773084 mỗi task uuid , trường hợp online phải phản hồi lại client đã nhận task
-// 2 kết nối web socket dựa vào task uuid để lọc trùng
-// UUID có các dụng để check trạng thái của task đã làm xong chưa
+import { InternalTaskService } from "./db/services/internal-task.service";
+import { isEqual } from "lodash";
+import { ActionType, TaskModel } from "./task.model";
+import { VgWsService } from "./ws/vg-websocket.service";
 @Injectable()
 export class TaskService {
   tasks = new Subject<TaskModel>();
@@ -18,35 +14,45 @@ export class TaskService {
   private taskQueue: TaskModel[] = []; // Hàng đợi task
   private isProcessing = false; // Biến kiểm tra xem có đang xử lý task nào không
   private queueMutex = new Mutex(); // Sử dụng Mutex để đảm bảo đồng bộ
-
-  constructor(private jobScratchService: JobScratchService ,private readonly configService: ConfigService) {
+  constructor(
+    private readonly internalTaskService: InternalTaskService,
+    private readonly jobScratchService: JobScratchService ,
+    private readonly configService: ConfigService) {
     const realm = this.configService.get('REALM');
     this.processQueue(); // Khởi động quá trình xử lý hàng đợi
-
+    this.internalTaskService.pullTask().subscribe( task => {
+      console.warn('internal task ' ,task );
+      this.tasks.next(task);
+    });
     const ws = new VgWsService();
     const url = this.configService.get<string>('WS');
     console.log(url);
     ws.connect(url);
     ws.register(realm, async (task: TaskModel) => {
-
-      if(!task.actionType) {
-        if(task['message']) {
-          console.warn('push task' ,task['message']);
-          this.tasks.next(task['message']);
-        }
-        return;
-      }
-      console.warn('task ' ,task);
-      this.tasks.next(task);
+       this.handleTask(task);
     });
     this.tasks.pipe(
-      // distinctUntilChanged( (pre,cur)=> {
-      //   return isEqual(pre ,cur);
-      // })
+      distinctUntilChanged( (pre,cur)=> {
+        return isEqual(pre ,cur);
+      })
     ).subscribe(async (task: TaskModel) => {
+      console.warn('ws push task: ' ,  task);
        await this.addTaskToQueue(task);
     });
   }
+  // Xử lý task khi nhận từ WebSocket
+  private handleTask(task: TaskModel) {
+    if (!task.actionType) {
+      if (task['message']) {
+        console.warn('push task', task['message']);
+        this.tasks.next(task['message']);
+      }
+      return;
+    }
+    console.warn('task', task);
+    this.tasks.next(task);
+  }
+
   // Xử lý task từ hàng đợi
   private async processQueue() {
     // Nếu đang xử lý task khác hoặc hàng đợi rỗng thì return
@@ -88,6 +94,9 @@ export class TaskService {
     }
     if(task.actionType === ActionType.SEND_MESSAGE) {
       await this.jobScratchService.sendMessage(task,destination);
+    }
+    if(task.actionType === ActionType.RELOAD) {
+      this.jobScratchService.reload(task);
     }
     } catch (error) {
       console.error('Error processing task:', error);

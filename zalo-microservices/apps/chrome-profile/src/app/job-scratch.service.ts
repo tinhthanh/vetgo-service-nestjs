@@ -4,17 +4,22 @@ import { take } from "rxjs";
 import * as path from 'path';
 const fs = require('fs').promises;
 import { HttpService } from "@nestjs/axios";
-import { TaskModel } from "@vg/common";
 import { ContactService } from "./db/services/contact.service";
 import { ListMessageService } from "./db/services/list-message.service";
 import { ConversationService } from "./db/services/conversation.service";
+import { FaceContact } from "./action.dtb";
+import { Content, MessageModel } from "./db/models/message.model";
+import { UploadService } from "./db/services/upload.service";
+import { TaskModel } from "./task.model";
 @Injectable()
 export class JobScratchService {
   constructor(
+    private readonly uploadService: UploadService,
     private readonly conversationService: ConversationService,
     private readonly contactService: ContactService,
     private readonly listMessageService: ListMessageService,
-    private readonly httpService: HttpService,private readonly puppeteerService: PuppeteerService) {}
+    private readonly httpService: HttpService,
+    private readonly puppeteerService: PuppeteerService) {}
 
   public async handleLoginTask(data: TaskModel, destination: string) {
     // const url = 'https://id.zalo.me';
@@ -207,10 +212,10 @@ export class JobScratchService {
             if(!data.data?.avt) {
               return;
             }
-            const inputParam = {avt: data.data?.avt};
+            const inputParam =  data.data as FaceContact;
             const keyCache = `${data.phone}-${inputParam.avt.split('/').pop()}`;
             console.warn(keyCache);
-            const cache = await this.conversationService.getAll(keyCache);
+            const cache = await this.conversationService.getAllConversation(keyCache,data.phone);
             this.sendProgress(cache, destination);
             await page.evaluate((scriptName,input) => {
               sessionStorage.setItem(scriptName, JSON.stringify(input));
@@ -222,16 +227,77 @@ export class JobScratchService {
                 // Thực thi mã JavaScript từ file script.js trên trang web
                 const isFound = await page.evaluate(scriptContent);
                  if(isFound) { // tìm thấy tiến hành cào data khung chát
+                  const cacheMessage = await this.conversationService.getAllConversation(keyCache, data.phone);
+                  const listContent: Content[]  = cacheMessage.reduce( (pre, curr) =>  {return pre.concat(curr.content) },[]);
+                  const lastItem = listContent.pop();
+                  let lastId =  {lastId: ''};
+                  if(lastItem) {
+                     lastId = {lastId: lastItem.id};
+                  }
+                  console.warn('last messagee id ', lastId);
+                  // nap input
+                  const conversationJs = "conversation.js";
+                  await page.evaluate((conversationJs,input) => {
+                    sessionStorage.setItem(conversationJs, JSON.stringify(input));
+                  },conversationJs, lastId);
+
                   const scriptGetConversation = await fs.readFile(path.join(__dirname, 'assets', 'scripts', "conversation.js"), 'utf8');
                     // Thực thi mã JavaScript từ file script.js trên trang web
-                    const listMess = await page.evaluate(scriptGetConversation);
-                        if(listMess) {
-                          this.sendProgress(listMess, destination);
-                          this.conversationService.saveAll(keyCache,listMess);
-                         }
+                    const listMess = (await page.evaluate(scriptGetConversation)) as MessageModel[];
+                    let dataFinal = listMess;
+
+                    if (listMess) {
+                      if (lastId.lastId) {
+                        const l = listMess.slice(
+                          Math.max(
+                            listMess.findIndex((i) =>
+                              i.content.some((c) => c.id === lastId.lastId)
+                            ),
+                            0
+                          ),
+                          listMess.length
+                        );
+                        dataFinal = cacheMessage.slice(0, cacheMessage.length - 1).concat(l);
+                      }
+                      const mListContent: {[key: string]: Content} = listContent.reduce( (pre, curr)=> {
+                           pre[curr.id]= curr;
+                         return pre;
+                      }, {});
+
+                      // Kiểm tra và xử lý blob nếu content type là 'image' và link bắt đầu bằng "blob:"
+                      for (const message of dataFinal) {
+                        for (const content of message.content) {
+                          if (content.type === 'image' && content.content.startsWith('blob:')) {
+                             // Gọi hàm uploadFile để upload và lấy URL mới
+                             if(mListContent[content.id]) {
+                              content.content = mListContent[content.id].content;
+                                continue;
+                              }
+                            // Chạy đoạn script trên trang để lấy nội dung blob
+                            const blobData = await page.evaluate(async (blobUrl) => {
+                              const response = await fetch(blobUrl); // Fetch blob từ URL
+                              const blob = await response.blob();
+                              const arrayBuffer = await blob.arrayBuffer();
+                              return Array.from(new Uint8Array(arrayBuffer)); // Chuyển blob thành array buffer
+                            }, content.content); // Pass blob URL into page.evaluate
+
+                            // Chuyển blobData từ array thành buffer
+                            const buffer = Buffer.from(blobData);
+                            const uploadedUrl = await this.uploadService.uploadFile(buffer, `${data.phone}/${content.id}.jpg`); // Đặt tên file phù hợp
+                            console.warn('link anh sau khi up' , uploadedUrl);
+                            // Thay thế link blob với URL mới
+                            content.content = uploadedUrl;
+                          }
+                        }
+                      }
+
+                      // Sau khi xử lý xong dataFinal, tiếp tục tiến hành như bình thường
+                      this.sendProgress(dataFinal, destination);
+                      this.conversationService.saveAllConversation(keyCache, data.phone, dataFinal);
+                    }
                  } else {
-                  // TODO nếu k thấy ở danh sách message đi luồng seach native
-                  // xong chạy lại open-chat.js để tìm lại
+                    // TODO thông báo user để nó đồng bộ lại dữ liệu của nó
+
                  }
 
 
@@ -250,7 +316,7 @@ export class JobScratchService {
          if(!data.data?.avt) {
            return;
          }
-         const inputParam = data.data;
+         const inputParam = data.data as FaceContact;
          await page.evaluate((scriptName,input) => {
            sessionStorage.setItem(scriptName, JSON.stringify(input));
          },scriptName, inputParam);
@@ -261,28 +327,26 @@ export class JobScratchService {
              // Thực thi mã JavaScript từ file script.js trên trang web
              const isFound = await page.evaluate(scriptContent);
               if(isFound) { // tìm thấy tiến hành cào data khung chát
-                 // TODO send messageee
-                 const scriptSendMessageName = "send-message.js";
-                 const scriptSendMessage = await fs.readFile(path.join(__dirname, 'assets', 'scripts', scriptSendMessageName), 'utf8');
-                 await page.evaluate((scriptSendMessageName,input) => {
-                  sessionStorage.setItem(scriptSendMessageName, JSON.stringify(input));
-                },scriptSendMessageName, inputParam);
-                 await page.evaluate(scriptSendMessage);
-                //  const scriptGetConversation = await fs.readFile(path.join(__dirname, 'assets', 'scripts', "conversation.js"), 'utf8');
-                //  // Thực thi mã JavaScript từ file script.js trên trang web
-                //  const listMess = await page.evaluate(scriptGetConversation);
-                //      if(listMess) {
-                //        this.sendProgress(listMess, destination);
-                //       }
+                // da gui thanh cong
               } else {
-               // TODO nếu k thấy ở danh sách message đi luồng seach native
-               // xong chạy lại open-chat.js để tìm lại
+                // that bai
               }
-
-
          } else {
             console.log('Tài khoản bị đăng xuất');
          }
+  }
+  async reload(data: TaskModel) {
+    const page = await this.puppeteerService.openOnlyUrl(data.phone, "https://chat.zalo.me");
+    if (await page.evaluate(() => navigator.onLine)) {
+      // Chỉ tiếp tục khi mạng hoạt động
+      console.log('Job reload run');
+      await new Promise( (rs) => setTimeout(()=> rs(null), 2000 ));
+      await page.reload();
+      await new Promise( (rs) => setTimeout(()=> rs(null), 2000 ));
+    } else {
+      console.warn('Rot mang roi khong reload duoc ');
+    }
+
   }
   sendProgress<T>(data: T, destination: string) {
     this.httpService.post(

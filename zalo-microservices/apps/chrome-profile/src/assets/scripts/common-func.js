@@ -50,6 +50,7 @@ window.vetgoConstant = {
   // Param key sesstionStorege
   PARAM_KEY_SHEET_ID_CLIENT: "sheetID",
   PARAM_KEY_PHONE: "phone",
+  PARAM_KEY_URL_CURD: 'URL_CURD',
   PARAM_KEY_REALM: "realm",
   PARAM_KEY_SHEET_SERVER: "sheetServer",
   // Giợi hạn số lần sử dụng chức năng
@@ -367,6 +368,19 @@ var vetgoSe = {
       console.warn('vetgoSe -> fetch', model);
       window.sendActionType(model).then((rs) => res(rs));
     }).catch((error) => console.log('Lỗi fetch: ' + error));
+  },
+  input(fileName) {
+    const inputStr = sessionStorage.getItem(fileName);
+    //class FaceContact
+    let input = null;
+    if (inputStr) {
+      sessionStorage.removeItem(fileName); // sau khi nhận thì xoá input
+      const iObj = JSON.parse(inputStr);
+      input = iObj;
+    } else {
+       console.error('Vui lòng truyền input vào hàm nay !');
+    }
+    return input;
   }
 };
 
@@ -385,6 +399,10 @@ async function selectText(selector) {
 // get phone for execute task
 function getPhone() {
   return sessionStorage.getItem(vetgoConstant.PARAM_KEY_PHONE);
+}
+// get url curd cua chu nhat
+function getUrlCurd() {
+  return sessionStorage.getItem(vetgoConstant.PARAM_KEY_URL_CURD);
 }
 // get realm
 function getRealm() {
@@ -560,7 +578,8 @@ var vetgoSheet = {
   },
 
     post: async (data) => {
-          const baseUrl = `https://api.phanmemvet.vn/public/api/dynamic/table`;
+          const urlCurd = getUrlCurd();
+          const baseUrl = `${urlCurd}/public/api/dynamic/table`;
           return new Promise(async (resolve, reject) => {
             if(data.actionType == 'getById'){
               const url = `${baseUrl}/${data.table}/${data.id}`;
@@ -627,6 +646,7 @@ vetgo.zalo.sendMessage('#input','hello zalo')
 ` ,
   sendMessage: async (idSelector, message) => { //OK
       let textSendMessage = await vetgo.se.waitForElement(idSelector);
+      document.querySelector(idSelector).click();
       if (textSendMessage == null) return false;
       await selectText(textSendMessage);
       await vetgoSe.sendKey(idSelector, message, true);

@@ -9,7 +9,7 @@ import {
     Subscription,
     take,
   } from 'rxjs';
-  
+
   import {
     Client,
     debugFnType,
@@ -20,12 +20,12 @@ import {
     StompHeaders,
     StompSubscription,
   } from '@stomp/stompjs';
-  
+
   import { RxStompConfig } from './rx-stomp-config';
   import { IRxStompPublishParams } from './i-rx-stomp-publish-params';
   import { RxStompState } from './rx-stomp-state';
   import { IWatchParams } from './i-watch-params';
-  
+
   /**
    * This is the main Stomp Client.
    * Typically, you will create an instance of this to connect to the STOMP broker.
@@ -53,7 +53,7 @@ import {
      * used to showing current status to the end user.
      */
     public readonly connectionState$: BehaviorSubject<RxStompState>;
-  
+
     /**
      * Will trigger when connection is established.
      * It will trigger every time a (re)connection occurs.
@@ -61,7 +61,7 @@ import {
      * You can safely ignore the value, as it will always be `StompState.OPEN`
      */
     public readonly connected$: Observable<RxStompState>;
-  
+
     /**
      * These will be triggered before connectionState$ and connected$.
      * During reconnecting, it will allow subscriptions to be reinstated before sending
@@ -69,16 +69,16 @@ import {
      */
     private _connectionStatePre$: BehaviorSubject<RxStompState>;
     private _connectedPre$: Observable<RxStompState>;
-  
+
     /**
      * Provides headers from the most recent connection to the server as returned by the CONNECTED frame.
      * If the STOMP connection has already been established, it will trigger immediately.
      * It will trigger for each (re)connection.
      */
     public readonly serverHeaders$: Observable<StompHeaders>;
-  
+
     protected _serverHeadersBehaviourSubject$: BehaviorSubject<null | StompHeaders>;
-  
+
     /**
      * This will yield any unhandled messages.
      * It is useful for receiving messages sent to RabbitMQ temporary queues.
@@ -93,7 +93,7 @@ import {
      * Maps to: [Client#onUnhandledMessage]{@link Client#onUnhandledMessage}
      */
     public readonly unhandledMessage$: Subject<IMessage>;
-  
+
     /**
      * This will yield any unhandled frame.
      * Normally, you should not receive anything here unless a non-compliant STOMP broker
@@ -106,7 +106,7 @@ import {
      * Maps to: [Client#onUnhandledFrame]{@link Client#onUnhandledFrame}
      */
     public readonly unhandledFrame$: Subject<IFrame>;
-  
+
     /**
      * STOMP brokers can be requested to notify when an operation is actually completed.
      * Prefer using {@link asyncReceipt}.
@@ -118,7 +118,7 @@ import {
      * Maps to: [Client#onUnhandledReceipt]{@link Client#onUnhandledReceipt}
      */
     public readonly unhandledReceipts$: Subject<IFrame>;
-  
+
     /**
      * It will stream all ERROR frames received from the STOMP Broker.
      * A compliant STOMP Broker will close the connection after this type of frame.
@@ -131,7 +131,7 @@ import {
      * Maps to: [Client#onStompError]{@link Client#onStompError}
      */
     public readonly stompErrors$: Subject<IFrame>;
-  
+
     /**
      * It will stream all web socket errors.
      *
@@ -141,12 +141,12 @@ import {
      * Maps to: [Client#onWebSocketError]{@link Client#onWebSocketError}
      */
     public readonly webSocketErrors$: Subject<Event>;
-  
+
     /**
      * Internal array to hold locally queued messages when STOMP broker is not connected.
      */
     protected _queuedMessages: publishParams[] = [];
-  
+
     /**
      * Instance of actual
      * [@stomp/stompjs]{@link https://github.com/stomp-js/stompjs}
@@ -158,22 +158,22 @@ import {
       return this._stompClient;
     }
     protected _stompClient: Client;
-  
+
     /**
      * Before connect
      */
     protected _beforeConnect: (client: RxStomp) => void | Promise<void>;
-  
+
     /**
      * Correlate errors
      */
-    protected _correlateErrors: (error: IFrame) => string;
-  
+    protected _correlateErrors: (error: IFrame) => string | undefined;
+
     /**
      * Will be assigned during configuration, no-op otherwise
      */
     protected _debug: debugFnType;
-  
+
     /**
      * Constructor
      *
@@ -185,61 +185,61 @@ import {
     public constructor(stompClient?: Client) {
       const client = stompClient ? stompClient : new Client();
       this._stompClient = client;
-  
+
       const noOp = () => {};
-  
+
       // Before connect is no op by default
       this._beforeConnect = noOp;
-  
+
       // Correlate errors is falsey op by default
       this._correlateErrors = () => undefined;
-  
+
       // debug is no-op by default
       this._debug = noOp;
-  
+
       // Initial state is CLOSED
       this._connectionStatePre$ = new BehaviorSubject<RxStompState>(
         RxStompState.CLOSED
       );
-  
+
       this._connectedPre$ = this._connectionStatePre$.pipe(
         filter((currentState: RxStompState) => {
           return currentState === RxStompState.OPEN;
         })
       );
-  
+
       // Initial state is CLOSED
       this.connectionState$ = new BehaviorSubject<RxStompState>(
         RxStompState.CLOSED
       );
-  
+
       this.connected$ = this.connectionState$.pipe(
         filter((currentState: RxStompState) => {
           return currentState === RxStompState.OPEN;
         })
       );
-  
+
       // Setup sending queuedMessages
       this.connected$.subscribe(() => {
         this._sendQueuedMessages();
       });
-  
+
       this._serverHeadersBehaviourSubject$ =
         new BehaviorSubject<null | StompHeaders>(null);
-  
+
       this.serverHeaders$ = this._serverHeadersBehaviourSubject$.pipe(
         filter((headers: null | StompHeaders) => {
           return headers !== null;
         })
       );
-  
+
       this.stompErrors$ = new Subject<IFrame>();
       this.unhandledMessage$ = new Subject<IMessage>();
       this.unhandledReceipts$ = new Subject<IFrame>();
       this.unhandledFrame$ = new Subject<IFrame>();
       this.webSocketErrors$ = new Subject<Event>();
     }
-  
+
     /**
      * Set configuration. This method may be called multiple times.
      * Each call will add to the existing configuration.
@@ -271,24 +271,24 @@ import {
         {},
         rxStompConfig
       );
-  
+
       if (stompConfig.beforeConnect) {
         this._beforeConnect = stompConfig.beforeConnect;
         delete stompConfig.beforeConnect;
       }
-  
+
       if (stompConfig.correlateErrors) {
         this._correlateErrors = stompConfig.correlateErrors;
         delete stompConfig.correlateErrors;
       }
-  
+
       // RxStompConfig has subset of StompConfig fields
       this._stompClient.configure(stompConfig as StompConfig);
       if (stompConfig.debug) {
         this._debug = stompConfig.debug;
       }
     }
-  
+
     /**
      * Initiate the connection with the broker.
      * If the connection breaks, as per [RxStompConfig#reconnectDelay]{@link RxStompConfig#reconnectDelay},
@@ -302,13 +302,13 @@ import {
       this._stompClient.configure({
         beforeConnect: async () => {
           this._changeState(RxStompState.CONNECTING);
-  
+
           // Call handler
           await this._beforeConnect(this);
         },
         onConnect: (frame: IFrame) => {
           this._serverHeadersBehaviourSubject$.next(frame.headers);
-  
+
           // Indicate our connected state to observers
           this._changeState(RxStompState.OPEN);
         },
@@ -332,11 +332,11 @@ import {
           this.webSocketErrors$.next(evt);
         },
       });
-  
+
       // Attempt connection
       this._stompClient.activate();
     }
-  
+
     /**
      * Disconnect if connected and stop auto reconnect loop.
      * Appropriate callbacks will be invoked if the underlying STOMP connection was connected.
@@ -353,21 +353,21 @@ import {
      */
     public async deactivate(options: { force?: boolean } = {}): Promise<void> {
       this._changeState(RxStompState.CLOSING);
-  
+
       // The promise will be resolved immediately if there is no active connection
       // otherwise, after it has successfully disconnected.
       await this._stompClient.deactivate(options);
-  
+
       this._changeState(RxStompState.CLOSED);
     }
-  
+
     /**
      * It will return `true` if STOMP broker is connected and `false` otherwise.
      */
     public connected(): boolean {
       return this.connectionState$.getValue() === RxStompState.OPEN;
     }
-  
+
     /**
      * If the client is active (connected or going to reconnect).
      *
@@ -376,7 +376,7 @@ import {
     get active(): boolean {
       return this.stompClient.active;
     }
-  
+
     /**
      * Send a message to a named destination. Refer to your STOMP broker documentation for types
      * and naming of destinations.
@@ -430,7 +430,7 @@ import {
         parameters.retryIfDisconnected == null
           ? true
           : parameters.retryIfDisconnected;
-  
+
       if (this.connected()) {
         this._stompClient.publish(parameters);
       } else if (shouldRetry) {
@@ -440,24 +440,24 @@ import {
         throw new Error('Cannot publish while broker is not connected');
       }
     }
-  
+
     /** It will send queued messages. */
     protected _sendQueuedMessages(): void {
       const queuedMessages = this._queuedMessages;
       this._queuedMessages = [];
-  
+
       if (queuedMessages.length === 0) {
         return;
       }
-  
+
       this._debug(`Will try sending  ${queuedMessages.length} queued message(s)`);
-  
+
       for (const queuedMessage of queuedMessages) {
         this._debug(`Attempting to send ${queuedMessage}`);
         this.publish(queuedMessage);
       }
     }
-  
+
     /**
      * It will subscribe to server message queues
      *
@@ -492,9 +492,9 @@ import {
         unsubHeaders: {},
         subscribeOnlyOnce: false,
       };
-  
+
       let params: IWatchParams;
-  
+
       if (typeof opts === 'string') {
         params = Object.assign({}, defaults, {
           destination: opts,
@@ -503,7 +503,7 @@ import {
       } else {
         params = Object.assign({}, defaults, opts);
       }
-  
+
       /* Well, the logic is complicated but works beautifully. RxJS is indeed wonderful.
        *
        * We need to activate the underlying subscription immediately if Stomp is connected. If not, it should
@@ -517,21 +517,21 @@ import {
        * the message subscriber.
        */
       this._debug(`Request to subscribe ${params.destination}`);
-  
+
       const coldObservable = Observable.create((messages: Observer<IMessage>) => {
         /*
          * These variables will be used as part of the closure and work their magic during unsubscribe
          */
         let stompSubscription: StompSubscription; // Stomp
-  
+
         let stompConnectedSubscription: Subscription; // RxJS
-  
+
         let connectedPre$ = this._connectedPre$;
-  
+
         if (params.subscribeOnlyOnce) {
           connectedPre$ = connectedPre$.pipe(take(1));
         }
-  
+
         const stompErrorsSubscription = this.stompErrors$.subscribe(
           (error: IFrame) => {
             const correlatedDestination = this._correlateErrors(error);
@@ -540,7 +540,7 @@ import {
             }
           }
         );
-  
+
         stompConnectedSubscription = connectedPre$.subscribe(() => {
           this._debug(`Will subscribe to ${params.destination}`);
           let subHeaders = params.subHeaders;
@@ -555,7 +555,7 @@ import {
             subHeaders
           );
         });
-  
+
         return () => {
           /* cleanup function, it will be called when no subscribers are left */
           this._debug(
@@ -563,7 +563,7 @@ import {
           );
           stompConnectedSubscription.unsubscribe();
           stompErrorsSubscription.unsubscribe();
-  
+
           if (this.connected()) {
             this._debug(`Will unsubscribe from ${params.destination} at Stomp`);
             let unsubHeaders = params.unsubHeaders;
@@ -578,7 +578,7 @@ import {
           }
         };
       });
-  
+
       /**
        * Important - convert it to hot Observable - otherwise, if the user code subscribes
        * to this observable twice, it will subscribe twice to Stomp broker. (This was happening in the current example).
@@ -586,7 +586,7 @@ import {
        */
       return coldObservable.pipe(share());
     }
-  
+
     /**
      * **Deprecated** Please use {@link asyncReceipt}.
      */
@@ -596,7 +596,7 @@ import {
     ): void {
       this._stompClient.watchForReceipt(receiptId, callback);
     }
-  
+
     /**
      * STOMP brokers may carry out operation asynchronously and allow requesting for acknowledgement.
      * To request an acknowledgement, a `receipt` header needs to be sent with the actual request.
@@ -629,7 +629,7 @@ import {
         )
       );
     }
-  
+
     protected _changeState(state: RxStompState): void {
       this._connectionStatePre$.next(state);
       this.connectionState$.next(state);

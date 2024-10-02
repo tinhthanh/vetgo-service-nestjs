@@ -9,6 +9,8 @@ import { HttpModule } from '@nestjs/axios';
 import { ContactService } from './db/services/contact.service';
 import { ListMessageService } from './db/services/list-message.service';
 import { ConversationService } from './db/services/conversation.service';
+import { UploadService } from './db/services/upload.service';
+import { InternalTaskService } from './db/services/internal-task.service';
 
 @Module({
   imports: [
@@ -39,7 +41,9 @@ import { ConversationService } from './db/services/conversation.service';
     TaskService,
     ContactService,
     ListMessageService,
-    ConversationService
+    ConversationService,
+    UploadService,
+    InternalTaskService
   ],
 })
 export class AppModule {}

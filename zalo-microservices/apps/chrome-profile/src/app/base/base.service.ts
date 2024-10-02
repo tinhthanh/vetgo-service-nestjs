@@ -1,5 +1,4 @@
 import { EntityModel } from './base.type';
-import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
 const fs = require('fs');
 import { promisify } from 'util';
@@ -12,6 +11,9 @@ export abstract class BaseService<T extends EntityModel> {
 
   constructor(tableName: string) {
     this.tableName = tableName;
+  }
+  getTableName() {
+    return this.tableName;
   }
 
   // Lấy tất cả dữ liệu từ bộ nhớ hoặc từ file nếu chưa có trong bộ nhớ

@@ -4,25 +4,25 @@
 //   "sender": "me",
 //   "content": [
 //       {
+//           "id": "5884397564563",
+//           "date": "1727748809908",
 //           "type": "text",
-//           "content": "Dạ hiện tại đã ổn định lại rồi chị ạ"
-//       }
-//   ],
-//   "time": "23:59",
-//   "avatar": "https://res-zalo.zadn.vn/upload/media/2019/1/25/iconlike_1548389696575_103596.png"
-// },
-// {
-//   "sender": "other",
-//   "content": [
+//           "content": "kinh chái la ben ben"
+//       },
 //       {
-//           "type": "image",
-//           "content": "blob:https://chat.zalo.me/79411b42-37e7-4b4c-94e4-cfa090a4595a"
+//           "id": "5884416816468",
+//           "date": "1727749077394",
+//           "type": "text",
+//           "content": "phong kham gui ket qua xet nghiem cho be ạ"
 //       }
 //   ],
-//   "time": "09:05",
-//   "avatar": "https://s120-ava-talk.zadn.vn/f/3/7/0/31/120/e64d748ecabf69945573344c88f247a0.jpg"
+//   "time": "09:17",
+//   "avatar": ""
 // }
 (async function () { // maxScrolls = 40
+  let input = vetgo.se.input('conversation.js') || {lastId: ''}; // {lastId: '5884397564563'}; chỉ cào đến last id
+
+  console.warn(input);
   async function scrollToTop() {
     const messageContainer = document.querySelector(
       "#messageViewContainer div[style*='overflow: scroll']"
@@ -34,7 +34,18 @@
       const maxScrolls = 40; // Giới hạn tối đa 5 lần cuộn
 
       // Lặp cho đến khi scrollTop đạt giá trị 0 (tức là lên đến đầu trang)
-      while (currentScrollTop > 0 && scrollCount < maxScrolls) {
+      const elNotShow = () => {
+        if(input.lastId) {
+          const lastMessage =  document.querySelector(`#mtc-${input.lastId}`);
+          if(lastMessage) {
+            console.warn('Đã tìm thấy last message trong cache');
+          }
+          return lastMessage ? false: true;
+        } else {
+          return true;
+        }
+      }
+      while ( elNotShow() && currentScrollTop > 0 && scrollCount < maxScrolls) {
         messageContainer.scrollTop -= 400; // Giảm scrollTop để cuộn lên
         await new Promise((resolve) => setTimeout(resolve, 100)); // Dừng 100ms trước khi cuộn tiếp
         currentScrollTop = messageContainer.scrollTop;
@@ -58,24 +69,32 @@
     chatItems.forEach((item) => {
       const isSender = item.querySelector('.me') !== null; // Kiểm tra tin nhắn do người gửi hay nhận
 
-      // Lấy tất cả các tin nhắn văn bản
-      const messageElements = item.querySelectorAll('.text');
+      // Lấy tất cả các tin nhắn văn bản id="bb_msg_id_1727617163899" 1727617163899 -> time
+      const messageElements = item.querySelectorAll('[id^="bb_msg_id_"]');
       const messageContentList = [];
 
       messageElements.forEach((msgElement) => {
-        const messageContent = msgElement ? msgElement.innerText : ''; // Lấy nội dung tin nhắn
-        if (messageContent) {
-          messageContentList.push({ type: 'text', content: messageContent });
+        const date =  msgElement.id.replaceAll('bb_msg_id_' , ''); // Lấy thời gian tin nhắn ->
+
+        const elId =  msgElement.querySelector('[id^="mtc-"]') || msgElement.querySelector('[id^="reaction-btn-"]') ;
+        // const elId =  msgElement.querySelector('[id^="reaction-btn-"]');
+          if(!elId) {
+             return;
+          }
+          const id = elId.id.replaceAll('mtc-' , '').replaceAll('reaction-btn-' , '');
+            // Kiểm tra xem có hình ảnh nào không
+      const imageElement = msgElement.querySelector('.chatImageMessage .image-box__image img');
+        if (imageElement) {
+          const imageUrl = imageElement.src; // Lấy đường dẫn ảnh
+          messageContentList.push({id, date, type: 'image', content: imageUrl });
+          return;
         }
+        const textMsg =  elId.innerText || '';
+        if (textMsg) {
+          messageContentList.push({id, date, type: 'text', content: textMsg });
+        }
+
       });
-
-      // Kiểm tra xem có hình ảnh nào không
-      const imageElement = item.querySelector('.image-box__image img');
-      if (imageElement) {
-        const imageUrl = imageElement.src; // Lấy đường dẫn ảnh
-        messageContentList.push({ type: 'image', content: imageUrl });
-      }
-
       const messageTime = item.querySelector('.card-send-time__sendTime')
         ? item.querySelector('.card-send-time__sendTime').innerText
         : ''; // Lấy thời gian gửi
@@ -88,7 +107,7 @@
         sender: isSender ? 'me' : 'other',
         content: messageContentList, // Danh sách các tin nhắn, có thể là văn bản hoặc hình ảnh
         time: messageTime,
-        avatar: avatar, // Đường dẫn tới avatar
+        avatar: isSender ? '' :avatar, // Đường dẫn tới avatar
       });
     });
 

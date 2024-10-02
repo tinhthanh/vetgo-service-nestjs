@@ -21,3 +21,13 @@ export interface RequestForward {
   url: string;
   init?: RequestInit;
 }
+
+
+// model gui len
+export interface FaceContact {
+  name: string;
+  msg: string;
+  time: string;
+  avt: string;
+  pinned?: boolean;
+}

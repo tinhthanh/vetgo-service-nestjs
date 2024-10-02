@@ -936,31 +936,31 @@ async function closeBrowser(isUpdateFireBase) {
 //       }, intervalTime);
 //   })
 // }
-async function uploadQrToFireBase(firebase_url, phone, qrCode, status, avatar) {
-  if (!firebase_url || !phone) return;
-  const headers = new Headers();
-  headers.append("Content-Type", "application/json");
-  const id = `QR_${phone}`;
-  const raw = JSON.stringify({
-      id: id,
-      qr: qrCode,
-      status: status,
-      img: avatar,
-      seqNo: new Date().getTime()
-  });
+// async function uploadQrToFireBase(firebase_url, phone, qrCode, status, avatar) {
+//   if (!firebase_url || !phone) return;
+//   const headers = new Headers();
+//   headers.append("Content-Type", "application/json");
+//   const id = `QR_${phone}`;
+//   const raw = JSON.stringify({
+//       id: id,
+//       qr: qrCode,
+//       status: status,
+//       img: avatar,
+//       seqNo: new Date().getTime()
+//   });
 
-  const requestOptions = {
-      method: 'PUT',
-      headers: headers,
-      body: raw,
-      redirect: 'follow'
-  };
+//   const requestOptions = {
+//       method: 'PUT',
+//       headers: headers,
+//       body: raw,
+//       redirect: 'follow'
+//   };
 
-  fetch(`${firebase_url}/WEB_HOOK/${id}.json`, requestOptions)
-      .then(response => response.text())
-      .then(result => console.log(result))
-      .catch(error => console.log('error', error));
-}
+//   fetch(`${firebase_url}/WEB_HOOK/${id}.json`, requestOptions)
+//       .then(response => response.text())
+//       .then(result => console.log(result))
+//       .catch(error => console.log('error', error));
+// }
 async function sendTelegramMessage(message) {
   const botToken = '6673410567:AAFlIFwjzMPgMyzAssjHnYlZfNSR-zt3Od8';
   const chatId = '-965779970';

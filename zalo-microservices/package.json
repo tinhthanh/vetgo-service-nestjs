@@ -3,8 +3,11 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
+    "build": "nx build chrome-profile",
     "start:chrome-profile": "nx serve chrome-profile --watch=false",
-    "start:all": "concurrently \"npm run start:api-gateway\""
+    "build:docker": "npm run build && docker build -t tinhthanh/vg-zl:0.0.1 .",
+    "docker:push": "docker push tinhthanh/vg-zl:0.0.1",
+    "start:prod": "node dist/main"
   },
   "private": true,
   "dependencies": {
@@ -31,7 +34,8 @@
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.0",
     "sockjs-client": "^1.6.1",
-    "tslib": "^2.3.0"
+    "tslib": "^2.3.0",
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@nestjs/schematics": "^10.0.1",

@@ -11,21 +11,9 @@
 
 (async () => { // return true | false -> true tìm được và mở khung chat len
   // start xử lý input
-  const inputStr = sessionStorage.getItem('open-chat.js'); // nhận input
-  let input = { avt: "" };
-  if (inputStr) {
-    sessionStorage.removeItem('open-chat.js'); // sau khi nhận thì xoá input
-    const iObj = JSON.parse(inputStr);
-    if (iObj.avt) {
-        input = iObj;
-    }
-  } else {
-     // thông báo lỗi
-     console.error('Vui lòng truyền input vào hàm nay !');
-     return false;
-  }
-  // end xử lý input
-
+  //class FaceContact
+  let input = vetgo.se.input('open-chat.js') || { avt: "", name: "", images: [], msg:"" };
+  console.warn('open-chat.js input' , input);
   document.body.style.zoom = '0.25';
   // kiểm tra có đang đứng ở màn hình danh sách tin nhắ hay không
   const elMenuActive = document.querySelector('.selected[data-translate-title="STR_TAB_MESSAGE"]');
@@ -39,7 +27,10 @@
   function checkAndClick() {
     try {
       let clicked = false; // Cờ để kiểm tra xem đã click chưa
-      document.querySelectorAll('.ReactVirtualized__Grid__innerScrollContainer .msg-item').forEach(el => {
+     [
+      ...document.querySelectorAll('.ReactVirtualized__Grid__innerScrollContainer [id^=friend-item-]'), //  lúc search có coverId
+      ...document.querySelectorAll('.ReactVirtualized__Grid__innerScrollContainer .msg-item')
+    ].forEach(el => {
         if (clicked) return; // Thoát nếu đã click
 
         if (el.querySelectorAll('.zavatar-single').length === 1) {
@@ -105,9 +96,33 @@
   // Gọi hàm và log kết quả
   const scrollContainer = document.querySelector('.virtualized-scroll > div');
   scrollContainer.scrollTop = 0; // đưa thanh scroll lên top
-  const result = await scrollAndCollect();
+  let result = await scrollAndCollect();
+  if(result === false && input.name) { // trường hợp khôg tìm thấy kết quả thì tìm kiếm với name
+      await vetgo.se.sendKey("#contact-search-input", input.name);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // doi kq
+      result = await scrollAndCollect();
+  }
+  if(result === true) {
+    // gửi tin nhắn với sự kiện nếu có
+    const list = (input?.images || []);
+    if(list.length > 0) {
+      for (let index = 0; index < list.length; index++) {
+        const url = list[index];
+        await vetgo.se.sendKeyImage("#chat-input-content-id" , url);
+      }
+    }
+    // gửi ảnh xong gửi tin
+    if(input?.msg) {
+      await vetgo.zalo.sendMessage("#chat-input-content-id"  , input.msg, true  );
+    }
+  }
   // scroll ve top
   scrollContainer.scrollTop = 0;
+ const elClose = document.querySelector('[data-translate-inner="STR_CLOSE"]');
+  if(elClose) {
+    elClose.click();
+  }
+
   console.warn('Kết quả tìm kiếm và click khung chát:', result);
     document.body.style.zoom = '1';
   return result;

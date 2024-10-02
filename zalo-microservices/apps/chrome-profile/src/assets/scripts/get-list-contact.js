@@ -7,6 +7,12 @@
      document.querySelector('[data-translate-title="STR_TAB_CONTACT"]').click();
      await new Promise(resolve => setTimeout(resolve, 1000));
   }
+  // kiểm tra đang active menu danh sách bạn bè
+  const elListActive = document.querySelector('.menu-contact .selected').querySelector('[data-translate-inner="STR_CONTACT_TAB_FRIEND_LIST"]');
+   if(!elListActive){
+     document.querySelector('[data-translate-inner="STR_CONTACT_TAB_FRIEND_LIST"]').click();
+     await new Promise(resolve => setTimeout(resolve, 1000));
+   }
   // Mảng lưu trữ các đối tượng avatar đã thu thập để tránh trùng lặp
   let collectedContacts = new Set();
 
